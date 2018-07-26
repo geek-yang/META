@@ -14,7 +14,7 @@ META can serve as a calculator for the following tasks: <br>
    eddy decomposition <br>
    OHC <br>
    MOC <br>
-* Statistical operations:  <br>
+* Statistical operations: :computer: <br>
    detrend (polynomial fit) <br>
    linear regression (time series, time series with spatial distribution, lead / lag) <br>
    visualization <br>
