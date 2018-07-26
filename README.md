@@ -6,18 +6,18 @@ Currently, MET only works with several reanalysis datasets shown below for the q
 ## Function
 META can serve as a calculator for the following tasks: <br>
 * Quantification of MET in the atmosphere :cloud: <br>
-... mass budget correction <br>
-... AMET <br>
-... eddy decomposition <br>
+   mass budget correction <br>
+   AMET <br>
+   eddy decomposition <br>
 * Quantification of MET in the ocean :ocean: <br>
-... OMET <br>
-... eddy decomposition <br>
-... OHC <br>
-... MOC <br>
+   OMET <br>
+   eddy decomposition <br>
+   OHC <br>
+   MOC <br>
 * Statistical operations: <br>
-... detrend (polynomial fit) <br>
-... linear regression (time series, time series with spatial distribution, lead / lag) <br>
-... visualization <br>
+   detrend (polynomial fit) <br>
+   linear regression (time series, time series with spatial distribution, lead / lag) <br>
+   visualization <br>
 
 
 ## Reanalysis
