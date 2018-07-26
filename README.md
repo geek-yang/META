@@ -4,20 +4,20 @@
 Currently, MET only works with several reanalysis datasets shown below for the quantification of MET. It will embrace more datasets soon in the next update, especially with regards to the outputs from numerical models (e.g. EC-earth). <br />
 
 ## Function
-META can serve as a calculator for the following tasks:
-* Quantification of MET in the atmosphere :cloud:
-... mass budget correction
-... AMET
-... eddy decomposition
-* Quantification of MET in the ocean :ocean:
-... OMET
-... eddy decomposition
-... OHC
-... MOC
-* Statistical operations:
-... detrend (polynomial fit)
-... linear regression (time series, time series with spatial distribution, lead / lag)
-... visualization
+META can serve as a calculator for the following tasks: <br>
+* Quantification of MET in the atmosphere :cloud: <br>
+... mass budget correction <br>
+... AMET <br>
+... eddy decomposition <br>
+* Quantification of MET in the ocean :ocean: <br>
+... OMET <br>
+... eddy decomposition <br>
+... OHC <br>
+... MOC <br>
+* Statistical operations: <br>
+... detrend (polynomial fit) <br>
+... linear regression (time series, time series with spatial distribution, lead / lag) <br>
+... visualization <br>
 
 
 ## Reanalysis
@@ -26,8 +26,8 @@ This library is designed to work with the atmospheric and oceanic reanalysis pro
 * MERRA2          [NASA]  <br>
 * JRA55           [JMA]  <br>
 * ORAS4           [ECMWF] <br>
-* GLORYS2V3       [
-
+* GLORYS2V3       [Mercator Ocean] <br>
+* SODA3           [Univ. Maryland] <br>
 
 ## Dependency
 META is tested on python 3 and has the following dependencies:
