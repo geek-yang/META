@@ -13,6 +13,7 @@ Caveat!         :
 """
 
 import numpy as np
+import scipy
 from scipy import stats
 import cartopy
 import os
@@ -181,46 +182,70 @@ class operator:
     def linearRegress(var_x, var_y, lag=0):
         """
         Linear regression of input time series. Lead/lag regression can also be performed.
-        param series: input time series, either 1D or 2/3D
-        
+        param var_x: input time series, either 1D or 2D
+        param var_y: input time series as the regression target, either 1D or 3D
+        param lag: time unit for lead / lag regression, lag must be an integer
         """
         # check the dimensions of input time series
         if var_x.shape == var_y.shape:
             print("One time series is regressed on another.")
-            if lag = 0:
-                if var_y.ndim == 2:
+            if var_y.ndim == 2:
+                if lag == 0:
                     t, y  = var_y.shape
                     slope = np.zeros(y, dtype=float)
                     r_value = np.zeros(y, dtype=float)
                     p_value = np.zeros(y, dtype=float)
                     for i in np.arange(y):
-                        slope[i], _, r_value[i], p_value[i] = stats.linregress(var_x[:,i], var_y[:,i])
-                else:
-                    raise IOError("The input time series must have dimensions @time,latitude@!")
-            elif lag > 0:
-                print ("This a regression with lead/lag analysis.")
-                if var_y.ndim == 2:
-                    t, y  = var_y.shape
-            else:
-                IOError("The lead / lag coefficient should be positive integers.")
-        else:
-            print("A time series is regressed on a field.")
-            if var_y.ndim == 3 and var_x.ndim == 1:
-                if lag == 0:
-                    t, y, x  = var_y.shape
-                    slope = np.zeros((y, x), dtype=float)
-                    r_value = np.zeros((y, x), dtype=float)
-                    p_value = np.zeros((y, x), dtype=float)
-                    for i in np.arange(y):
-                        for j in np.arange(x):
-                            slope[i,j], _, r_value[i,j], p_value[i,j] = stats.linregress(var_x, var_y[:,i,j])
+                        slope[i], _, r_value[i], p_value[i], _ = stats.linregress(var_x[:,i], var_y[:,i])
                 elif lag > 0:
                     print ("This a regression with lead/lag analysis.")
-                    
+                    t, y  = var_y.shape
+                    lag_index = np.arange(-lag,lag+1,1)
+                    slope = np.zeros((len(lag_index),y), dtype=float)
+                    r_value = np.zeros((len(lag_index),y), dtype=float)
+                    p_value = np.zeros((len(lag_index),y), dtype=float)
+                    # regress
+                    for i in np.arange(len(lag_index)):
+                        for j in np.arange(y):
+                            if lag_index[i]<0: # var_x lead var_y
+                                slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                               var_x[:lag_index[i],j], var_y[-lag_index[i]:,j])
+                            elif lag_index[i]>0: # var_y lead var_x
+                                slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                               var_x[lag_index[i]:,j], var_y[:-lag_index[i],j])
+                            else:
+                                slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                               var_x[:,j], var_y[:,j])
+                else:
+                    IOError("The lead / lag coefficient should be positive integers.")
             else:
-                IOError("The time series should be regressed on an array with higher order.")
+                raise IOError("The input time series must have dimensions @time,latitude@!")
+        elif var_y.ndim == 3 and var_x.ndim == 1:
+            print("A time series is regressed on a field.")
+            if lag == 0:
+                t, y, x  = var_y.shape
+                slope = np.zeros((y, x), dtype=float)
+                r_value = np.zeros((y, x), dtype=float)
+                p_value = np.zeros((y, x), dtype=float)
+                for i in np.arange(y):
+                    for j in np.arange(x):
+                        slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x, var_y[:,i,j])
+            elif lag > 0:
+                print ("This a regression with lead/lag analysis.")
+                print ("Positive lag means 2nd input leads 1st, vice versa.")
+                t, y, x  = var_y.shape
+                slope = np.zeros((y, x), dtype=float)
+                r_value = np.zeros((y, x), dtype=float)
+                p_value = np.zeros((y, x), dtype=float)
+                for i in np.arange(y):
+                    for j in np.arange(x):
+                        slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[lag:], var_y[:-lag,i,j])
+            else:
+                IOError("The lead / lag coefficient should be integers.")
+        else:
+            IOError("The dimensons of input time series are not supported.")
         
-        return
+        return slope, r_value, p_value
 
     @staticmethod
     def seasons(series, Dim_month=False):
