@@ -21,7 +21,6 @@ import iris
 import matplotlib
 import seaborn as sns
 import matplotlib.pyplot as plt
-#import statistics
 
 class operator:
     def __init__(self, var):
