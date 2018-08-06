@@ -36,15 +36,28 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
 """
 
 import sys
+import os
 import numpy as np
+from netCDF4 import Dataset
+import massBudget
+import amet
+import matplotlib
+# generate images without having a window appear
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 class erai:
-    def __init__(self, path):
+    def __init__(self, path, out_path):
         """
         Initialize the extraction of fields from ERA-Interim.
-        param path: the root path of the 
+        param path: the root path of the
+        param out_path: the location of output files
+        param lat_unit: number of grid boxes meridionally (to calculate the unit width)
         """
         self.path = path
+        self.out_path = out_path
+        # 
+        self.lat_unit = 240
     
     @staticmethod
     def defineSigmaLevels():
@@ -88,4 +101,123 @@ class erai:
             1.0000000000e+000,],dtype=float)
         
         return (A, B)
+    
+    def massCorrect(self, year_start, year_end, example, fields=2):
+        """
+        Mass budget correction.
+        param year_start: the starting time for the calculation
+        param year_end: the ending time for the calculation
+        param fields: number of fields contained in one file, two options available
+        - 1 each file contains only 1 field
+        - 2 (default) each file contains 2 fields
+        param example: an example input file for loading dimensions (lat, lon)
+        """
+        # set up logging files to monitor the calculation
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget.log') ,
+                            filemode = 'w+', level = logging.DEBUG,
+                            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # define sigma level
+        A, B = self.defineSigmaLevels()
+        # use example input file to load the basic dimensions information
+        example_key = Dataset(example)
+        time = example_key['time'][:]
+        lat = example_key['latitude'][:]
+        lon = example_key['longitude'][:]
+        level = example_key['level'][:]
+        # create space for the output
+        uc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        # loop for the computation of divergent corrected winds
+        if fields == 2:
+            for i in year:
+                for j in month:
+                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
+                    datapath_T_q = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_T_q.nc'.format(i, j))
+                    datapath_u_v = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    # take the fields from last and next month for tendency terms
+                    
+                    if month == 1:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i-1, 12))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i-1, 12))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        if i == year_start:
+                            datapath_q_last = datapath_T_q
+                            datapath_lnsp_last = datapath_z_lnsp
+                    elif month == 12:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i+1, 1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
+                        if i == year_end:
+                            datapath_q_next = datapath_T_q
+                            datapath_lnsp_next = datapath_z_lnsp
+                    else:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                    # get all the variables for the mass budget correction
+                    T_q_key = Dataset(datapath_T_q)
+                    u_v_key = Dataset(datapath_u_v)
+                    z_lnsp_key = Dataset(datapath_z_lnsp)
+                    # get the variable keys for the calculation of tendency during mass budget correction
+                    q_last_key = Dataset(datapath_q_last)
+                    q_next_key = Dataset(datapath_q_next)
+                    lnsp_last_key = Dataset(datapath_lnsp_last)
+                    lnsp_next_key = Dataset(datapath_lnsp_next)
+                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    # extract variables
+                    q = T_q_key.variables['q'][:]
+                    lnsp = z_lnsp_key.variables['lnsp'][:]
+                    u = u_v_key.variables['u'][:]
+                    v = u_v_key.variables['v'][:]
+                    # extract variables for the calculation of tendency
+                    q_last = q_last_key.variables['q'][-1,:,:,:]
+                    q_next = q_next_key.variables['q'][0,:,:,:]
+                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,:,:]
+                    lnsp_next = lnsp_next_key.variables['lnsp'][0,:,:]
+                    # calculate sp
+                    sp = np.exp(lnsp)
+                    sp_last = np.exp(lnsp_last)
+                    sp_next = np.exp(lnsp_next)
+                    del lnsp, lnsp_last, lnsp_next
+                    logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
+                    # start the mass correction
+                    uc, vc = massBudget.correction(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                    # save the output to the data pool
+                    uc_pool[i-year_start,j-1,:,:] = uc
+                    vc_pool[i-year_start,j-1,:,:] = vc
+            # export output as netCDF files
+            saveNetCDF.ncCorrect(uc_pool, vc_pool, self.out_path)
+        elif fields == 1:
+            print ("This function will be added soon")
+        else:
+            IOError("Please follow the naming rule as described in the documentation!")
+    
+    def amet(self, year_start, year_end):
+        
+    
+    def eddies(self, year_start, year_end):
     
