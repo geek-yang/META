@@ -1,18 +1,26 @@
 #!/usr/bin/env python
 
 import numpy as np
+import scipy
 from netCDF4 import Dataset
 import matplotlib
+import matplotlib.pyplot as plt
 import os
+import platform
 import statistics
+import ERAI
+
+print (platform.architecture())
+print (os.path)
 
 if __name__=="__main__":
     # sample
-    datapath_ERAI_fields = '/home/yang/workbench/Core_Database_AMET_OMET_reanalysis/ERAI/regression'
-    dataset_ERAI_fields_SIC_SST_SLP = Dataset(datapath_ERAI_fields + os.sep + 'surface_ERAI_monthly_regress_1979_2016.nc')
-    SST_ERAI_series = dataset_ERAI_fields_SIC_SST_SLP.variables['sst'][:]
-    print (SST_ERAI_series.shape)
-    instance = statistics.operator(SST_ERAI_series)
-    print (type(instance))
-    SST_ERAI_series_white = instance.anomaly(mode=1) # input doesn't have dimension [month]
-    print (SST_ERAI_series_white.shape)
+    ################################   Input zone  ######################################
+    # specify data path
+    datapath_ERAI = '/home/yang/workbench/test'
+    output_path = '/home/yang/workbench/test'
+    example = '/home/yang/workbench/test/era1991/model_daily_075_1991_4_T_q.nc'
+    #####################################################################################
+    print ('*********************** call functions *************************')
+    instance = ERAI.erai(datapath_ERAI,output_path)
+    instance.massCorrect(1991,1991,example)

@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Extract Meteorological fields from ERA-Interim
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.08.03
-Last Update     : 2018.08.03
+Last Update     : 2018.08.07
 Contributor     :
 Description     : This module aims to load fields from the standard netCDF files
                   downloaded directly from online data system of ECMWF. It provides an
@@ -38,12 +38,14 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
 import sys
 import os
 import numpy as np
+import logging
 from netCDF4 import Dataset
 import massBudget
 import amet
 import matplotlib
+import saveNetCDF
 # generate images without having a window appear
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 class erai:
@@ -56,7 +58,7 @@ class erai:
         """
         self.path = path
         self.out_path = out_path
-        # 
+        # 0.75 deg per grid box latitudinally
         self.lat_unit = 240
     
     @staticmethod
@@ -124,7 +126,7 @@ class erai:
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
         example_key = Dataset(example)
-        time = example_key['time'][:]
+        #time = example_key['time'][:]
         lat = example_key['latitude'][:]
         lon = example_key['longitude'][:]
         level = example_key['level'][:]
@@ -142,9 +144,8 @@ class erai:
                                                 'model_daily_075_{}_{}_u_v.nc'.format(i, j))
                     datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
                                                 'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
-                    # take the fields from last and next month for tendency terms
-                    
-                    if month == 1:
+                    # extract fields for the calculation of tendency terms
+                    if j == 1:
                         datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
                                                        'model_daily_075_{}_{}_T_q.nc'.format(i-1, 12))
                         datapath_q_next = os.path.join(self.path,'era{}'.format(i),
@@ -156,7 +157,7 @@ class erai:
                         if i == year_start:
                             datapath_q_last = datapath_T_q
                             datapath_lnsp_last = datapath_z_lnsp
-                    elif month == 12:
+                    elif j == 12:
                         datapath_q_last = os.path.join(self.path,'era{}'.format(i),
                                                        'model_daily_075_{}_{}_T_q.nc'.format(i, j-1))
                         datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
@@ -192,6 +193,8 @@ class erai:
                     lnsp = z_lnsp_key.variables['lnsp'][:]
                     u = u_v_key.variables['u'][:]
                     v = u_v_key.variables['v'][:]
+                    # get time dimension
+                    time = T_q_key.variables['time'][:]
                     # extract variables for the calculation of tendency
                     q_last = q_last_key.variables['q'][-1,:,:,:]
                     q_next = q_next_key.variables['q'][0,:,:,:]
@@ -205,19 +208,61 @@ class erai:
                     logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
                     # start the mass correction
                     uc, vc = massBudget.correction(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                                                   len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
             # export output as netCDF files
-            saveNetCDF.ncCorrect(uc_pool, vc_pool, self.out_path)
+            saveNetCDF.savenc.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
         elif fields == 1:
             print ("This function will be added soon")
         else:
             IOError("Please follow the naming rule as described in the documentation!")
     
     def amet(self, year_start, year_end):
+        """
+        Quantify Meridional Energy Transport.
         
-    
+        """
+         # set up logging files to monitor the calculation
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
+                            filemode = 'w+', level = logging.DEBUG,
+                            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # define sigma level
+        A, B = self.defineSigmaLevels()
+        # use example input file to load the basic dimensions information
+        example_key = Dataset(example)
+        time = example_key['time'][:]
+        lat = example_key['latitude'][:]
+        lon = example_key['longitude'][:]
+        level = example_key['level'][:]
+        # create space for the output
+        E = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        cpT = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        Lvq = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        gz = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        
     def eddies(self, year_start, year_end):
-    
+        """
+        Decompose eddy components for the AMET.
+        """
+          # set up logging files to monitor the calculation
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_eddies.log') ,
+                            filemode = 'w+', level = logging.DEBUG,
+                            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # define sigma level
+        A, B = self.defineSigmaLevels()
+        # use example input file to load the basic dimensions information
+        example_key = Dataset(example)
+        time = example_key['time'][:]
+        lat = example_key['latitude'][:]
+        lon = example_key['longitude'][:]
+        level = example_key['level'][:]   
