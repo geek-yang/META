@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 import numpy as np
+import sys
+sys.path.append("../")
 import scipy
 from netCDF4 import Dataset
 import matplotlib
 import matplotlib.pyplot as plt
 import os
 import platform
-import statistics
-import ERAI
+#import statistics
+import meta.ERAI
 
 print (platform.architecture())
 print (os.path)
@@ -23,4 +25,4 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = ERAI.erai(datapath_ERAI,output_path)
-    instance.massCorrect(1991,1991,example)
+    instance.massCorrect(1991,1992,example)

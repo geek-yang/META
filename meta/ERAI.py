@@ -35,6 +35,20 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                   field, too. This function will be added soon.
 """
 
+##########################################################################
+###########################   Units vacabulory   #########################
+# cpT:  [J / kg K] * [K]     = [J / kg]
+# Lvq:  [J / kg] * [kg / kg] = [J / kg]
+# gz is [m2 / s2] = [ kg m2 / kg s2 ] = [J / kg]
+
+# multiply by v: [J / kg] * [m / s] => [J m / kg s]
+# sum over longitudes [J m / kg s] * [ m ] = [J m2 / kg s]
+
+# integrate over pressure: dp: [Pa] = [N m-2] = [kg m2 s-2 m-2] = [kg s-2]
+# [J m2 / kg s] * [Pa] = [J m2 / kg s] * [kg / s2] = [J m2 / s3]
+# and factor 1/g: [J m2 / s3] * [s2 /m2] = [J / s] = [Wat]
+##########################################################################
+
 import sys
 import os
 import numpy as np
@@ -52,6 +66,13 @@ class erai:
     def __init__(self, path, out_path):
         """
         Initialize the extraction of fields from ERA-Interim.
+        
+        The data is on hybrid sigma levels. As the interpolation can introduce
+        large errors to the computation of energy transport, we will follow the
+        model level. The determination of levels is based on the estimation of
+        pressure on each level with standard surface pressure 1013.25 hPa
+        (see ERA-Interim archive by ECMWF.).
+        
         param path: the root path of the
         param out_path: the location of output files
         param lat_unit: number of grid boxes meridionally (to calculate the unit width)
@@ -60,6 +81,10 @@ class erai:
         self.out_path = out_path
         # 0.75 deg per grid box latitudinally
         self.lat_unit = 240
+        # number of levels for certain pressure
+        self.p_200 = 
+        self.p_500 =
+        self.p_850 =
     
     @staticmethod
     def defineSigmaLevels():
@@ -104,6 +129,31 @@ class erai:
         
         return (A, B)
     
+    @staticmethod
+    def setConstants():
+        '''
+        Define constants used in the calculations. The constants include:
+        const g: gravititional acceleration [m / s2]
+        const R: radius of the earth [m]
+        const cp: heat capacity of air [J/(Kg*K)]
+        const Lv: Latent heat of vaporization [J/Kg]
+        const R_dry: gas constant of dry air [J/(kg*K)]
+        const R_vap: gas constant for water vapour [J/(kg*K)]
+        
+        returns: dictionary with constants for g, R. cp, Lv, R_dry and R_vap
+        rtype: dict
+        '''
+        # define the constant:
+        constant = {'g' : 9.80616,      # gravititional acceleration [m / s2]
+                    'R' : 6371009,      # radius of the earth [m]
+                    'cp': 1004.64,      # heat capacity of air [J/(Kg*K)]
+                    'Lv': 2264670,      # Latent heat of vaporization [J/Kg]
+                    'R_dry' : 286.9,    # gas constant of dry air [J/(kg*K)]
+                    'R_vap' : 461.5,    # gas constant for water vapour [J/(kg*K)]
+                   }
+        
+        return constant
+    
     def massCorrect(self, year_start, year_end, example, fields=2):
         """
         Mass budget correction.
@@ -127,9 +177,9 @@ class erai:
         # use example input file to load the basic dimensions information
         example_key = Dataset(example)
         #time = example_key['time'][:]
-        lat = example_key['latitude'][:]
-        lon = example_key['longitude'][:]
-        level = example_key['level'][:]
+        lat = example_key.variables['latitude'][:]
+        lon = example_key.variables['longitude'][:]
+        level = example_key.variables['level'][:]
         # create space for the output
         uc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
@@ -207,22 +257,31 @@ class erai:
                     del lnsp, lnsp_last, lnsp_next
                     logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
                     # start the mass correction
-                    uc, vc = massBudget.correction(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                    SinkSource = massBudget.correction()
+                    uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
             # export output as netCDF files
-            saveNetCDF.savenc.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
+            packing = saveNetCDF.savenc()
+            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
         elif fields == 1:
             print ("This function will be added soon")
         else:
             IOError("Please follow the naming rule as described in the documentation!")
     
-    def amet(self, year_start, year_end):
+    def amet(self, year_start, year_end, path_uvc, fields=2):
         """
         Quantify Meridional Energy Transport.
+        param year_start: the starting time for the calculation
+        param year_end: the ending time for the calculation
+        param path_uvc: location of the baratropic corrected winds
+        param fields: number of fields contained in one file, two options available 
+        - 1 each file contains only 1 field
+        - 2 (default) each file contains 2 fields
         
+        return: netCDF4
         """
          # set up logging files to monitor the calculation
         logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
@@ -235,16 +294,87 @@ class erai:
         # define sigma level
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
-        example_key = Dataset(example)
-        time = example_key['time'][:]
-        lat = example_key['latitude'][:]
-        lon = example_key['longitude'][:]
-        level = example_key['level'][:]
+        uvc_key = Dataset(path_uvc)
+        lat = uvc_key['latitude'][:]
+        lon = uvc_key['longitude'][:]
+        #uc = uvc_key['uc'][:]
+        vc = uvc_key['vc'][:]
         # create space for the output
-        E = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
-        cpT = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
-        Lvq = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
-        gz = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
+        # the number at the end of each name indicates the integral
+        # from surface to a certain height (hPa)
+        # the results will be saved per year to save memory
+        # AMET in the entire column
+        E_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        # AMET upto 200hPA
+        E_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        # AMET upto 500hPA
+        E_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        # AMET upto 850hPA
+        E_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        # loop for the computation of divergent corrected winds
+        if fields == 2:
+            for i in year:
+                for j in month:
+                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
+                    datapath_T_q = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_T_q.nc'.format(i, j))
+                    datapath_u_v = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    # get all the variables for the mass budget correction
+                    T_q_key = Dataset(datapath_T_q)
+                    u_v_key = Dataset(datapath_u_v)
+                    z_lnsp_key = Dataset(datapath_z_lnsp)
+                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    # extract variables
+                    T = T_q_key.variables['t'][:]
+                    q = T_q_key.variables['q'][:]
+                    lnsp = z_lnsp_key.variables['lnsp'][:]
+                    z = z_lnsp_key.variables['z'][:]
+                    u = u_v_key.variables['u'][:]
+                    v = u_v_key.variables['v'][:]
+                    # get time dimension
+                    time = T_q_key.variables['time'][:]
+                    level = T_q_key.variables['level'][:]
+                    # calculate sp
+                    sp = np.exp(lnsp)
+                    # calculate geopotential
+                    gz = self.calc_gz(T, q, sp, z, A, B, len(time),
+                                      len(level), len(lat), len(lon))
+                    logging.info("Extracting variables successfully!")
+                    AMET = amet.met()
+                    E_0, cpT_0, Lvq_0, gz_0, uv2_0, E_200, cpT_200, \
+                    Lvq_200, gz_200, uv2_200, E_500, cpT_500, Lvq_500, \
+                    gz_500, uv2_500, E_850, cpT_850, Lvq_850, gz_850, \
+                    uv2_850 = AMET.calc_amet(T, q, sp, u, v, gz, A, B, len(time),
+                                             len(level), len(lat), len(lon), lat,
+                                             self.lat_unit, vc, self.p_200,
+                                             self.p_500, self.p_850)
+                # save output as netCDF files
+                packing = saveNetCDF.savenc()
+                    
+                    
+        elif fields == 1:
+            print ("This function will be added soon")
+        else:
+            IOError("Please follow the naming rule as described in the documentation!")
         
     def eddies(self, year_start, year_end):
         """
@@ -262,7 +392,73 @@ class erai:
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
         example_key = Dataset(example)
-        time = example_key['time'][:]
-        lat = example_key['latitude'][:]
-        lon = example_key['longitude'][:]
-        level = example_key['level'][:]   
+        time = example_key.variables['time'][:]
+        lat = example_key.variables['latitude'][:]
+        lon = example_key.variables['longitude'][:]
+        level = example_key.variables['level'][:]
+        
+    def calc_gz(self, T, q, sp, z, A, B, t, h, y, x):
+        """
+        Calculate geopotential on sigma levels.
+        The method is given in ECMWF IFS 9220, from section 2.20 - 2.23.
+        
+        param T: Absolute Temperature  [K]
+        param q: Specific Humidity     [kg/kg]
+        param sp: Surface Pressure     [Pa]
+        param z: Surface Geopotential  [m2/s2]
+        param A: Constant A for Defining Sigma Level
+        param B: Constant B for Defining Sigma Level
+        param t: time dimension of input fields
+        param h: level dimension of input fields
+        param y: latitude dimension of input fields
+        param x: longitude dimension of input fields
+        
+        return: An array of geopotential.
+        rtype: numpy array
+        """
+        # call the function to generate contants
+        constant = self.setConstants()
+        # define the half level pressure matrix
+        p_half_plus = np.zeros((t, h, y, x),dtype = float)
+        p_half_minus = np.zeros((t, h, y, x),dtype = float)
+        # calculate the index of pressure levels
+        index_level = np.arange(h)
+        # calculate the pressure at each half level
+        for i in index_level:
+            p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp
+            p_half_minus[:,i,:,:] = A[i] + B[i] * sp
+        # calculate full pressure level
+        #level_full = (p_half_plus + p_half_minus) / 2
+        # compute the moist temperature (virtual temperature)
+        Tv = T * (1 + (constant['R_vap'] / constant['R_dry'] - 1) * q)
+        # initialize the first half level geopotential
+        gz_half = np.zeros((t, y, x),dtype =float)
+        # initialize the full level geopotential
+        gz = np.zeros((t, h, y, x),dtype = float)
+        # Calculate the geopotential at each level
+        # The integral should be taken from surface level to the TOA
+        for i in index_level:
+            # reverse the index
+            i_inverse = h - 1 - i
+            # the ln(p_plus/p_minus) is calculated, alpha is defined
+            # an exception lies in the TOA
+            # see equation 2.23 in ECMWF IFS 9220
+            if i_inverse == 0:
+                ln_p = np.log(p_half_plus[:,i_inverse,:,:]/10)
+                alpha = np.log(2)
+            else:
+                ln_p = np.log(p_half_plus[:,i_inverse,:,:]/p_half_minus[:,i_inverse,:,:])
+                delta_p = p_half_plus[:,i_inverse,:,:] - p_half_minus[:,i_inverse,:,:]
+                alpha = 1 - p_half_minus[:,i_inverse,:,:] / delta_p * ln_p
+            # calculate the geopotential of the full level (exclude surface geopotential)
+            # see equation 2.22 in ECMWF IFS 9220
+            gz_full = gz_half + alpha * constant['R_dry'] * Tv[:,i_inverse,:,:]
+            # add surface geopotential to the full level
+            # see equation 2.21 in ECMWF IFS 9220
+            gz[:,i_inverse,:,:] = z + gz_full
+            # renew the half level geopotential for next loop step (from p_half_minus level to p_half_plus level)
+            # see equation 2.20 in ECMWF IFS 9220
+            gz_half = gz_half + ln_p * constant['R_dry'] * Tv[:,i_inverse,:,:]
+        logging.info("Computation of geopotential on model level is finished!")
+        
+        return gz

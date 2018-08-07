@@ -50,32 +50,8 @@ import logging
 # and factor 1/g: [J m2 / s3] * [s2 /m2] = [J / s] = [Wat]
 ##########################################################################  
 class correction:
-    def __init__(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                 t, h, y, x, lat, lat_unit):
-        """
-        Get input fields for the mass budget correction. All the input files
-        should contain the fields for the entire month.
-        param q: Specific Humidity [kg/kg]
-        param sp: Surface Pressure [Pa]
-        param u: Zonal Wind [m/s]
-        param v: Meridional Wind [m/s]
-        param A: Constant A for Defining Sigma Level
-        param B: Constant B for Defining Sigma Level
-        param t: time dimension of input fields
-        param h: level dimension of input fields
-        param y: latitude dimension of input fields
-        param x: longitude dimension of input fields
-        param lat: latitude
-        param lat_unit: number of grid boxes meridionally (to calculate the unit width)
-        
-        returns: barotropic corrected wind components in meridional (vc)
-                 zonal (uc) direction
-        rtype: numpy array
-        """
-        # perform the calculation of mass budget correction 
-        uc, vc = self.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                  t, h, y, x, lat, lat_unit)
-        return uc, vc
+    def __init__(self):
+        print ("Start the mass budget correction.")
     
     @staticmethod
     def setConstants():
@@ -107,7 +83,23 @@ class correction:
         """
         Perform mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds.
+        All the input files should contain the fields for the entire month.
+        param q: Specific Humidity [kg/kg]
+        param sp: Surface Pressure [Pa]
+        param u: Zonal Wind [m/s]
+        param v: Meridional Wind [m/s]
+        param A: Constant A for Defining Sigma Level
+        param B: Constant B for Defining Sigma Level
+        param t: time dimension of input fields
+        param h: level dimension of input fields
+        param y: latitude dimension of input fields
+        param x: longitude dimension of input fields
+        param lat: latitude
+        param lat_unit: number of grid boxes meridionally (to calculate the unit width)
         
+        returns: barotropic corrected wind components in meridional (vc)
+                 zonal (uc) direction
+        rtype: numpy array        
         """
         # create constants
         constant = self.setConstants()
@@ -167,7 +159,7 @@ class correction:
         for i in np.arange(y):
             if i == 0:
                 div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i,:]) / (2 * dy)
-            elif i == (x-1):
+            elif i == (y-1):
                 div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)
             else:
                 div_moisture_flux_v[:,i,:] = -(moisture_flux_v_int[:,i+1,:] - moisture_flux_v_int[:,i-1,:]) / (2 * dy)     
@@ -190,7 +182,7 @@ class correction:
                 # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
                 if j == 0:
                     div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,j+1] - mass_flux_u_int[:,i,-1]) / (2 * dx[i])
-                elif j == (len(longitude)-1) :
+                elif j == (x-1) :
                     div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,0] - mass_flux_u_int[:,i,j-1]) / (2 * dx[i])
                 else:
                     div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,j+1] - mass_flux_u_int[:,i,j-1]) / (2 * dx[i])                    
@@ -205,8 +197,6 @@ class correction:
         mass_residual = np.zeros((y,x),dtype = float)
         mass_residual = sp_tendency + constant['g'] * (np.mean(div_mass_flux_u,0) +\
                         np.mean(div_mass_flux_v,0)) - constant['g'] * E_P
-        # delete intermedium variables to save memory
-        del mass_flux_u, mass_flux_v
         logging.info("Computation of mass residual on each grid point is finished!")
         # calculate precipitable water
         precipitable_water = q * dp_level / constant['g']
@@ -217,7 +207,7 @@ class correction:
         vc = np.zeros((y,x),dtype = float)
         vc = mass_residual * dy / (sp_mean - constant['g'] * precipitable_water_int)
         vc[0,:] = 0 # Modification at polar points
-        for i in np.arange(len(latitude)):
+        for i in np.arange(y):
             uc[i,:] = mass_residual[i,:] * dx[i] / (sp_mean[i,:] -
                       constant['g'] * precipitable_water_int[i,:])
         logging.info("Computation of barotropic correction wind on each grid point is finished!")

@@ -18,6 +18,12 @@ import numpy as np
 from netCDF4 import Dataset
 
 class savenc:
+    def __init__(self):
+        """
+        Save the output fields into netCDF files.
+        """
+        print ("Save output fields as netCDF4 files.")
+        
     def ncCorrect(self, uc, vc, year, lat, lon, path):
         """
         Save the baratropic corrected wind into netCDF files.
