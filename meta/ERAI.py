@@ -385,10 +385,10 @@ class erai:
                     E_500[j-1,:,:], cpT_500[j-1,:,:], Lvq_500[j-1,:,:], gz_500[j-1,:,:], uv2_500[j-1,:,:],\
                     E_850[j-1,:,:], cpT_850[j-1,:,:], Lvq_850[j-1,:,:], gz_850[j-1,:,:], uv2_850[j-1,:,:],\
                     E_vert[j-1,:,:], cpT_vert[j-1,:,:], Lvq_vert[j-1,:,:], gz_vert[j-1,:,:], \
-                    uv2_vert[j-1,:,:] = AMET.calc_amet(T, q, sp, u, v, gz, A, B, len(time),
+                    uv2_vert[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz, A, B, len(time),
                                              len(level), len(lat), len(lon), lat,
-                                             self.lat_unit, vc, self.p_200,
-                                             self.p_500, self.p_850)
+                                             self.lat_unit, vc[i-year_start,j-1,:,:]
+                                             self.p_200, self.p_500, self.p_850)
                 # save output as netCDF files
                 packing = meta.saveNetCDF.savenc()
                 packing.ncAMET(E_0, cpT_0, Lvq_0, gz_0, uv2_0,

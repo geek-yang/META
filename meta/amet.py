@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Meridional Energy Transport in the Atmosphere with Reanalysis
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.08.01
-Last Update     : 2018.08.07
+Last Update     : 2018.08.08
 Contributor     :
 Description     : This module provides a method to perform the computation
                   of meridional energy transport in the atmosphere. Moreover,
@@ -89,8 +89,11 @@ class met:
                  upto different heights.
         rtype: numpy array       
         """
+        # generate the contants
+        constant = setConstants()
+        # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
-        for i in index_level:
+        for i in np.arange(h):
             dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
         # calculate each component of total energy and take the vertical integral 
         # include mass correction component
