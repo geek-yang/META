@@ -102,7 +102,9 @@ class met:
         del internal_flux
         internal_flux_correct = vc_4D * constant['cp'] * T * dp_level / constant['g']
         del T
+        logging.info("The calculation of internal energy is finished!")
         # Latent heat Lvq
+        logging.info("The calculation of latent heat is finished!")
         
         return
         
@@ -113,12 +115,16 @@ class eddy:
         standing eddy transport and transient eddy transport.
         """
         print ("Start decomposing the meridional energy transport into eddy components.")
+
     
+    def calc_mean(self):
+        """
+        Calculate the temporal and spatial mean of certain variables.
+        """
+        logging.info("The calculation of temporal mean is finished!")
+
     def calc_eddy(self):
         """
-        
+        Decompose the eddy components of AMET.
         """
-    
-    def calc_(self):
-        
-        
+        logging.info("The calculation of standing eddy is finished!")

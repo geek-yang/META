@@ -12,6 +12,11 @@ Description     : This module aims to load fields from the standard netCDF files
                   correction, quantification of meridional energy transport, decomposition
                   of eddies.
                   
+                  ERA-Interim is a state-of-the-art atmosphere reanalysis product produced
+                  by ECMWF. It spans from 1979 to 2017. Natively it is generated on a hybrid
+                  sigma grid with a horizontal resolution of 0.75 x 0.75 deg and 60 vertical
+                  levels.
+                  
                   The processing unit is monthly data, for the sake of memory saving.
                   
 Return Values   : netCDF files
@@ -54,13 +59,13 @@ import os
 import numpy as np
 import logging
 from netCDF4 import Dataset
-import massBudget
-import amet
-import matplotlib
-import saveNetCDF
+import meta.massBudget
+import meta.amet
+#import matplotlib
+import meta.saveNetCDF
 # generate images without having a window appear
 #matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class erai:
     def __init__(self, path, out_path):
@@ -82,9 +87,9 @@ class erai:
         # 0.75 deg per grid box latitudinally
         self.lat_unit = 240
         # number of levels for certain pressure
-        self.p_200 = 
-        self.p_500 =
-        self.p_850 =
+        self.p_200 = 29
+        self.p_500 = 38
+        self.p_850 = 48
     
     @staticmethod
     def defineSigmaLevels():
@@ -257,14 +262,14 @@ class erai:
                     del lnsp, lnsp_last, lnsp_next
                     logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
                     # start the mass correction
-                    SinkSource = massBudget.correction()
+                    SinkSource = meta.massBudget.correction()
                     uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
             # export output as netCDF files
-            packing = saveNetCDF.savenc()
+            packing = meta.saveNetCDF.savenc()
             packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
         elif fields == 1:
             print ("This function will be added soon")
@@ -281,7 +286,8 @@ class erai:
         - 1 each file contains only 1 field
         - 2 (default) each file contains 2 fields
         
-        return: netCDF4
+        return: arrays containing AMET and its components upto differnt pressure levels
+        rtype: netCDF4
         """
          # set up logging files to monitor the calculation
         logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
@@ -359,7 +365,7 @@ class erai:
                     gz = self.calc_gz(T, q, sp, z, A, B, len(time),
                                       len(level), len(lat), len(lon))
                     logging.info("Extracting variables successfully!")
-                    AMET = amet.met()
+                    AMET = meta.amet.met()
                     E_0, cpT_0, Lvq_0, gz_0, uv2_0, E_200, cpT_200, \
                     Lvq_200, gz_200, uv2_200, E_500, cpT_500, Lvq_500, \
                     gz_500, uv2_500, E_850, cpT_850, Lvq_850, gz_850, \
@@ -368,7 +374,7 @@ class erai:
                                              self.lat_unit, vc, self.p_200,
                                              self.p_500, self.p_850)
                 # save output as netCDF files
-                packing = saveNetCDF.savenc()
+                packing = meta.saveNetCDF.savenc()
                     
                     
         elif fields == 1:
@@ -406,7 +412,7 @@ class erai:
         param q: Specific Humidity     [kg/kg]
         param sp: Surface Pressure     [Pa]
         param z: Surface Geopotential  [m2/s2]
-        param A: Constant A for Defining Sigma Level
+        param A: Constant A for Defining Sigma Level [Pa]
         param B: Constant B for Defining Sigma Level
         param t: time dimension of input fields
         param h: level dimension of input fields

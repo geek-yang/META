@@ -25,4 +25,4 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = ERAI.erai(datapath_ERAI,output_path)
-    instance.massCorrect(1991,1992,example)
+    instance.massCorrect(1991,1991,example)

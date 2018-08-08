@@ -18,9 +18,9 @@ from scipy import stats
 import cartopy
 import os
 import iris
-import matplotlib
+#import matplotlib
 import seaborn as sns
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 class operator:
     def __init__(self, var):
