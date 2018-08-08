@@ -81,6 +81,9 @@ class erai:
         param path: the root path of the
         param out_path: the location of output files
         param lat_unit: number of grid boxes meridionally (to calculate the unit width)
+        param p_200: index of sigma level upto 200hPa
+        param p_500: index of sigma level upto 500hPa
+        param p_850: index of sigma level upto 850hPa
         """
         self.path = path
         self.out_path = out_path
@@ -285,6 +288,7 @@ class erai:
         param fields: number of fields contained in one file, two options available 
         - 1 each file contains only 1 field
         - 2 (default) each file contains 2 fields
+        param example: an example input file for loading dimensions (level)
         
         return: arrays containing AMET and its components upto differnt pressure levels
         rtype: netCDF4
@@ -305,6 +309,9 @@ class erai:
         lon = uvc_key['longitude'][:]
         #uc = uvc_key['uc'][:]
         vc = uvc_key['vc'][:]
+        # calculate the levels based on A & B and standard surface pressure
+        half_level = A + B * 101325
+        level = (half_level[1:] + half_level[:-1]) / 2
         # create space for the output
         # the number at the end of each name indicates the integral
         # from surface to a certain height (hPa)
@@ -333,6 +340,12 @@ class erai:
         Lvq_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         gz_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         uv2_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        # AMET vertical profile following the sigma level
+        E_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
+        cpT_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
+        Lvq_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
+        gz_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
+        uv2_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
         # loop for the computation of divergent corrected winds
         if fields == 2:
             for i in year:
@@ -348,7 +361,7 @@ class erai:
                     T_q_key = Dataset(datapath_T_q)
                     u_v_key = Dataset(datapath_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)
-                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
                     # extract variables
                     T = T_q_key.variables['t'][:]
                     q = T_q_key.variables['q'][:]
@@ -358,25 +371,32 @@ class erai:
                     v = u_v_key.variables['v'][:]
                     # get time dimension
                     time = T_q_key.variables['time'][:]
-                    level = T_q_key.variables['level'][:]
+                    #level = T_q_key.variables['level'][:]
                     # calculate sp
                     sp = np.exp(lnsp)
                     # calculate geopotential
+                    print ('Calculate geopotential on each model level.')
                     gz = self.calc_gz(T, q, sp, z, A, B, len(time),
                                       len(level), len(lat), len(lon))
                     logging.info("Extracting variables successfully!")
                     AMET = meta.amet.met()
-                    E_0, cpT_0, Lvq_0, gz_0, uv2_0, E_200, cpT_200, \
-                    Lvq_200, gz_200, uv2_200, E_500, cpT_500, Lvq_500, \
-                    gz_500, uv2_500, E_850, cpT_850, Lvq_850, gz_850, \
-                    uv2_850 = AMET.calc_amet(T, q, sp, u, v, gz, A, B, len(time),
+                    E_0[j-1,:,:], cpT_0[j-1,:,:], Lvq_0[j-1,:,:], gz_0[j-1,:,:], uv2_0[j-1,:,:],\
+                    E_200[j-1,:,:], cpT_200[j-1,:,:], Lvq_200[j-1,:,:], gz_200[j-1,:,:], uv2_200[j-1,:,:],\
+                    E_500[j-1,:,:], cpT_500[j-1,:,:], Lvq_500[j-1,:,:], gz_500[j-1,:,:], uv2_500[j-1,:,:],\
+                    E_850[j-1,:,:], cpT_850[j-1,:,:], Lvq_850[j-1,:,:], gz_850[j-1,:,:], uv2_850[j-1,:,:],\
+                    E_vert[j-1,:,:], cpT_vert[j-1,:,:], Lvq_vert[j-1,:,:], gz_vert[j-1,:,:], \
+                    uv2_vert[j-1,:,:] = AMET.calc_amet(T, q, sp, u, v, gz, A, B, len(time),
                                              len(level), len(lat), len(lon), lat,
                                              self.lat_unit, vc, self.p_200,
                                              self.p_500, self.p_850)
                 # save output as netCDF files
                 packing = meta.saveNetCDF.savenc()
-                    
-                    
+                packing.ncAMET(E_0, cpT_0, Lvq_0, gz_0, uv2_0,
+                               E_200, cpT_200, Lvq_200, gz_200, uv2_200,
+                               E_500, cpT_500, Lvq_500, gz_500, uv2_500,
+                               E_850, cpT_850, Lvq_850, gz_850, uv2_850,
+                               E_vert, cpT_vert, Lvq_vert, gz_vert, uv2_vert,
+                               i, level, lat, lon, self.out_path)
         elif fields == 1:
             print ("This function will be added soon")
         else:
@@ -422,6 +442,7 @@ class erai:
         return: An array of geopotential.
         rtype: numpy array
         """
+        logging.info("Start the computation of geopotential on model level.")
         # call the function to generate contants
         constant = self.setConstants()
         # define the half level pressure matrix

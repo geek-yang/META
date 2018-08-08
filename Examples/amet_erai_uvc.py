@@ -20,9 +20,14 @@ if __name__=="__main__":
     ################################   Input zone  ######################################
     # specify data path
     datapath_ERAI = '/home/yang/workbench/test'
+    #datapath_ERAI = '/project/Reanalysis/ERA_Interim/Subdaily/Model'
     output_path = '/home/yang/workbench/test'
+    #output_path = '/project/Reanalysis/ERA_Interim/Subdaily/Model'
     example = '/home/yang/workbench/test/era1991/model_daily_075_1991_4_T_q.nc'
+    #example = '/project/Reanalysis/ERA_Interim/Subdaily/Model/era1991/model_daily_075_1991_4_T_q.nc'
+    uvc_path = '/home/yang/workbench/test/model_subdaily_075_1991_1991_uvc_point.nc'
     #####################################################################################
     print ('*********************** call functions *************************')
-    instance = ERAI.erai(datapath_ERAI,output_path)
-    instance.massCorrect(1991,1991,example)
+    instance = meta.ERAI.erai(datapath_ERAI,output_path)
+    #instance.massCorrect(1991,1991,example)
+    instance.amet(1991,1991,uvc_path)
