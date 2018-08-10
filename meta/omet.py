@@ -14,3 +14,105 @@ Description     : This module provides a method to perform the computation
 Return Values   : netCDF files
 Caveat!         :
 """
+
+import numpy as np
+from netCDF4 import Dataset
+import os
+import platform
+import sys
+import logging
+
+def setConstants():
+    """
+    Define constants used in the calculations. The constants include:
+    const g: gravititional acceleration     [m / s2]
+    const R: radius of the earth            [m]
+    const cp: heat capacity of sea water    [J/(Kg*C)]
+    const rho: sea water density            [Kg/m3]
+
+    returns: dictionary with constants for g, R. cp, rho
+    rtype: dict
+    """
+    # define the constant:
+    constant = {'g' : 9.80616,      # gravititional acceleration [m / s2]
+                'R' : 6371009,      # radius of the earth [m]
+                'cp': 3987,         # heat capacity of sea water [J/(Kg*C)]
+                'rho': 1027,        # sea water density [Kg/m3]
+                }
+        
+    return constant
+
+class met:
+    def __init__(self):
+        """
+        Quantify the meridional energy transport upto certain depth levels.
+        To avoid the error due to the filled values for mask, the input data
+        should not contain mask and the filled values should be 0.
+        """
+        print ("Start quantifying the meridional energy transport in the ocean.")
+
+    def calc_met(self, T, v, mask, e1v, e3t_0, e3t_adjust, tmaskpac, tmaskatl, 
+                 z, jj, ji, z_100, z_300, z_700, z_2000, time_scale='monthly'):
+        """
+        Calculate the meridional energy transport in the ocean.
+        param T: interpolation of potential temperature on the vector grid (v grid)    [z, jj, ji]
+        param v: meridional current velocity                   [z, jj, ji]
+        param mask: land-sea mask on vector grid               [z, jj, ji]
+        param e1v: width of the grid box in zonal direction    [jj, ji]
+        param e3t_0: depth of each grid box                    [z]
+        param e3t_adjust: adjustment of grid box depth based on the definition of partial grid  [z, jj, ji]
+        param z_100: index of depth level upto 100m
+        param z_300: index of depth level upto 300m
+        param z_700: index of depth level upto 700m
+        param z_2000: index of depth level upto 2000m
+        param time_scale: time scale of the input data (affect dimensions), two options are available
+        - 'monthly' (default) the input data is monthly mean
+        - 'submonthly' the input data is weekly / 5 daily / daily
+        
+        return: arrays of OMET upto certain depth
+        rtype: numpy arrays
+        """
+        # generate the contants
+        constant = setConstants()
+        if time_scale == 'monthly':
+            # calculate heat flux at each grid point
+            E_flux = np.zeros((z,jj,ji),dtype=float)
+            E_flux_pac = np.zeros((z,jj,ji),dtype=float)
+            E_flux_atl = np.zeros((z,jj,ji),dtype=float)
+            for i in np.arange(z):
+                E_flux[i,:,:] = constant['rho'] * constant['cp'] * v[i,:,:] *\
+                                T[i,:,:] * e1v * e3t_0[i] * mask[i,:,:] -\
+                                constant['rho'] * constant['cp'] * v[i,:,:] *\
+                                T[i,:,:] * e1v * e3t_adjust[i,:,:] * mask[i,:,:]
+                E_flux_pac[i,:,:] = E_flux[i,:,:] * tmaskpac
+                E_flux_atl[i,:,:] = E_flux[i,:,:] * tmaskatl
+            # take the vertical integral upto certain layer
+            # change the unit to Tera Watt
+            E_flux_0 = np.sum(E_flux,0) /1e+12
+            E_flux_100 = np.sum(E_flux[:z_100+1,:,:],0) /1e+12
+            E_flux_300 = np.sum(E_flux[:z_300+1,:,:],0) /1e+12
+            E_flux_700 = np.sum(E_flux[:z_700+1,:,:],0) /1e+12
+            E_flux_2000 = np.sum(E_flux[:z_2000+1,:,:],0) /1e+12
+            E_vert = np.sum(E_flux,2) /1e+12
+            E_pac_vert = np.sum(E_flux_pac,2) /1e+12
+            E_atl_vert = np.sum(E_flux_atl,2) /1e+12
+            logging.info("The calculation of meridional energy flux is finished!")
+        elif time_scale == 'submonthly':
+            print ('This function will be added soon.')
+        else:
+            IOError("The time scale of the input fields are not supported by this module.")
+        
+        return E_flux_0, E_flux_100, E_flux_300, E_flux_700, E_flux_2000, E_vert, E_pac_vert, \
+               E_atl_vert
+
+    def ohc(self, T, mask, e1v, e3t_0, e3t_adjust, tmaskpac, tmaskatl, 
+            z, jj, ji, z_100, z_300, z_700, z_2000, time_scale='monthly'):
+        """
+        Quantify ocean heat content upto certain depths.
+        param 
+        
+        return: arrays of OHC upto certain depth
+        rtype: numpy arrays
+        """
+        logging.info("The calculation of OHC is finished!")
+                        

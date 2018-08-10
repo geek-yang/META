@@ -78,7 +78,7 @@ class erai:
         pressure on each level with standard surface pressure 1013.25 hPa
         (see ERA-Interim archive by ECMWF.).
         
-        param path: the root path of the
+        param path: the root path of the input fields
         param out_path: the location of output files
         param lat_unit: number of grid boxes meridionally (to calculate the unit width)
         param p_200: index of sigma level upto 200hPa
@@ -346,7 +346,7 @@ class erai:
         Lvq_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
         gz_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
         uv2_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
-        # loop for the computation of divergent corrected winds
+        # loop for the computation of AMET
         if fields == 2:
             for i in year:
                 for j in month:
