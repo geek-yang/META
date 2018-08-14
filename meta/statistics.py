@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Statistical Operator for Climate Data
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.07.26
-Last Update     : 2018.07.30
+Last Update     : 2018.08.14
 Contributor     :
 Description     : This module provides several methods to perform statistical
                   analysis on MET and all kinds of fields.
@@ -308,7 +308,50 @@ class operator:
             series_winter[2::3,:,:] = series[11::12,:,:]#December
             series_winter[0::3,:,:] = series[0::12,:,:] #January
             series_winter[1::3,:,:] = series[1::12,:,:] #February
+        else:
+            raise IOError("This module can not work with any array with a \
+                           dimension higher than 3!")            
         
         return series_summer, series_winter
         
-        
+    @staticmethod
+    def interpolation(series, lat_nav, lat_tar, interp_kind='slinear',Dim_month=True):
+        """
+        Interpolate a time series onto certain latitudes for the coupling
+        and comparison of atmosphere and ocean fields.
+        It is recommended to interpolate time series of oceanic fields on
+        the latitude of the certain atmospheric fields to avoid the data
+        out of range issues.
+        param series: input time series
+        param lat_nav: original latitude for the input data
+        param lat_tar: target latitude for interpolation
+        param interp_kind: the methods for interpolation, it includse
+        -linear
+        -nearest
+        -(spline)slinear (default) / quadratic / cubic
+        param Dim_month: there are two modes for removing the seasonal cycling
+        -True (default) input time series have month dimension [year,month,...]
+        -False input time series have only 1 dimension for time
+        """
+        if series.ndim > 3:
+            raise IOError("This module can not work with any array with a \
+                           dimension higher than 3!")
+        else:
+            if Dim_month == True:
+                t, m, y = series.shape
+                interp_series = np.zeros((t, m, len(lat_tar)), dtype=float)
+                for i in np.arange(t):
+                    for j in np.arange(m):
+                        # call the data attribute in case it has mask
+                        ius = scipy.interpolate.interp1d(lat_nav.data, series[i,j,:], kind=interp_kind,
+                                                         bounds_error=False, fill_value=0.0)
+                        interp_series[i,j,:] = ius(lat_tar.data)
+            else:
+                t, y = series.shape
+                interp_series = np.zeros((t, len(lat_tar)), dtype=float)
+                for i in np.arange(t):
+                    ius = scipy.interpolate.interp1d(lat_nav.data, series[i,:], kind=interp_kind,
+                                                     bounds_error=False, fill_value=0.0)
+                    interp_series[i,:] = ius(lat_tar.data)
+            
+        return interp_series
