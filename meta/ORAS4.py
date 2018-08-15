@@ -174,17 +174,19 @@ class oras:
             # as the module omet is designed to process data per month, we add a loop for month
             for j in month:
                 OMET = meta.omet.met()
-                E[j-1,:,:], E_100[j-1,:,:], E_300[j-1,:,:], E_700[j-1,:,:], E_2000[j-1,:,:], E_vert[j-1,:,:],\
-                E_pac_vert[j-1,:,:], E_atl_vert[j-1,:,:] = OMET.calc_met(T_vgrid[j-1,:,:,:], v_nomask[j-1,:,:,:],
-                                                                         vmask, e1v, e3t_0, e3t_adjust, tmaskpac, 
-                                                                         tmaskatl, z, jj, ji, self.z_100,self.z_300,
-                                                                         self.z_700, self.z_2000)
+                E[j-1,:,:], E_100[j-1,:,:], E_300[j-1,:,:], E_700[j-1,:,:], \
+                E_2000[j-1,:,:], E_vert[j-1,:,:], E_pac_vert[j-1,:,:],\
+                E_atl_vert[j-1,:,:] = OMET.calc_met(T_vgrid[j-1,:,:,:], v_nomask[j-1,:,:,:],
+                                                    vmask, e1v, e3t_0, e3t_adjust, tmaskpac, 
+                                                    tmaskatl, z, jj, ji, self.z_100,self.z_300,
+                                                    self.z_700, self.z_2000)
             # save output as netCDF files
             packing = meta.saveNetCDF.savenc()
             packing.ncOMET(E, E_100, E_300, E_700, E_2000, E_vert, E_pac_vert,
                            E_atl_vert, i, gphiv, glamv, nav_lev, z, jj, ji, self.out_path)
+        logging.info('The entire pipeline is complete!')
 
-    def ohc(self, year_start, year_end, path_mask):
+    def ohc(self, year_start, year_end, path_mask, path_submask):
         """
         Quantify ocean heat content upto certain depths.
         param 
@@ -196,8 +198,66 @@ class oras:
         logging.basicConfig(filename = os.path.join(self.out_path,'history_ohc.log') ,
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # extract information from land-sea mask file
+        nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v,\
+        gphiv, glamv, mbathy, e3t_0, e3t_ps = self.mask(path_mask)
+        logging.info('Successfully retrieving the ORCA1 coordinate and mask info!')
+        # obtain the land-sea mask of sub-ocean basins
+        subbasin_key = Dataset(path_submask)
+        tmaskpac = subbasin_key.variables['tmaskpac_ORCA1'][:]
+        tmaskatl = subbasin_key.variables['tmaskatl_ORCA1'][:]
+        # obtain dimensions
+        jj, ji = nav_lat.shape
+        z = len(nav_lev)
+        # construct partial cell depth matrix
+        # the size of partial cell is given by e3t_ps
+        # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+        # then minus this adjustment when calculate the OMET at each layer with mask
+        # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+        e3t_adjust = np.zeros((z,jj,ji),dtype = float)
+        for i in np.arange(1,z,1): # start from 1
+            for j in np.arange(jj):
+                for k in np.arange(ji):
+                    if i == mbathy[j,k]:
+                        e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
+        # create arrays to store the output data
+        OHC = np.zeros((len(month), jj, ji), dtype=float)
+        OHC_100 = np.zeros((len(month), jj, ji), dtype=float)
+        OHC_300 = np.zeros((len(month), jj, ji), dtype=float)
+        OHC_700 = np.zeros((len(month), jj, ji), dtype=float)
+        OHC_2000 = np.zeros((len(month), jj, ji), dtype=float)
+        OHC_pac_vert = np.zeros((len(month), z, jj), dtype=float)
+        OHC_atl_vert = np.zeros((len(month), z, jj), dtype=float)
+        OHC_vert = np.zeros((len(month), z, jj), dtype=float)
+        # loop for the computation of OHC
+        for i in year:
+            logging.info("Start retrieving variables for {}(y)".format(i))
+            datapath_theta = os.path.join(self.path, 'theta', 'thetao_oras4_1m_{}_grid_T.nc'.format(i))
+            theta_key = Dataset(datapath_theta)
+            theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
+            theta_nomask = theta.data
+            theta_nomask[theta.mask == True] = 0
+            logging.info("Extracting variables successfully!")
+            # as the module omet is designed to process data per month, we add a loop for month
+            for j in month:
+                OMET = meta.omet.met()
+                OHC[j-1,:,:], OHC_100[j-1,:,:], OHC_300[j-1,:,:], OHC_700[j-1,:,:],\
+                OHC_2000[j-1,:,:], OHC_vert[j-1,:,:], OHC_pac_vert[j-1,:,:],\
+                OHC_atl_vert[j-1,:,:] = OMET.calc_ohc(theta_nomask[j-1,:,:,:], tmask, e1t, e2t,
+                                                      e3t_0, e3t_adjust, tmaskpac, tmaskatl, z,
+                                                      jj, ji, self.z_100,self.z_300, self.z_700,
+                                                      self.z_2000)
+            # save output as netCDF files
+            packing = meta.saveNetCDF.savenc()
+            packing.ncOHC(OHC, OHC_100, OHC_300, OHC_700, OHC_2000, OHC_vert, OHC_pac_vert,
+                           OHC_atl_vert, i, nav_lat, nav_lon, nav_lev, gphiv, z, jj, ji, self.out_path)                
+        logging.info('The entire pipeline is complete!')
         
-    def psi(self, year_start, year_end, path_mask):
+    def psi(self, year_start, year_end, path_mask, path_submask):
         """
         Quantify the mass transport upto certain depths.
         param path_mask: location of the file containing land sea mask and coordinate info
@@ -209,6 +269,33 @@ class oras:
         logging.basicConfig(filename = os.path.join(self.out_path,'history_psi.log') ,
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # extract information from land-sea mask file
+        nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v,\
+        gphiv, glamv, mbathy, e3t_0, e3t_ps = self.mask(path_mask)
+        logging.info('Successfully retrieving the ORCA1 coordinate and mask info!')
+        # obtain the land-sea mask of sub-ocean basins
+        subbasin_key = Dataset(path_submask)
+        tmaskpac = subbasin_key.variables['tmaskpac_ORCA1'][:]
+        tmaskatl = subbasin_key.variables['tmaskatl_ORCA1'][:]
+        # obtain dimensions
+        jj, ji = nav_lat.shape
+        z = len(nav_lev)
+        # construct partial cell depth matrix
+        # the size of partial cell is given by e3t_ps
+        # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+        # then minus this adjustment when calculate the OMET at each layer with mask
+        # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+        e3t_adjust = np.zeros((z,jj,ji),dtype = float)
+        for i in np.arange(1,z,1): # start from 1
+            for j in np.arange(jj):
+                for k in np.arange(ji):
+                    if i == mbathy[j,k]:
+                        e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
+        logging.info('The entire pipeline is complete!')
         
     def mask(self, path_mask):
         """

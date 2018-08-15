@@ -270,9 +270,19 @@ class savenc:
                year, gphiv, glamv, nav_lev, z, jj, ji, path, name='ORAS4'):
         """
         Save the OMET upto certain levels into netCDF files.
-        param 
+        param E: total meridional energy transport over the entire depth
+        param E_100: total meridional energy transport from sea surface to 100m
+        param E_300: total meridional energy transport from sea surface to 300m
+        param E_700: total meridional energy transport from sea surface to 700m
+        param E_2000: total meridional energy transport from sea surface to 2000m
+        param E_vert: vertical profile of total meridional energy transport
+        param E_pac_vert: vertical profile of total meridional energy transport in the Pacific Ocean
+        param E_atl_vert: vertical profile of total meridional energy transport in the Atlantic Ocean
+
+        return: netCDF4 files containing OMET on the native grid.
+        rtype: netCDF4
         """
-        logging.info("Start creating netcdf file for AMET and its components at each grid point.")
+        logging.info("Start creating netcdf file for OMET at each grid point.")
         if name == 'ORAS4':
             data_wrap = Dataset(os.path.join(path, 'oras_model_monthly_{}_omet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
@@ -340,6 +350,94 @@ class savenc:
         E_vert_wrap_var[:] = E_vert
         E_pac_vert_wrap_var[:] = E_pac_vert
         E_atl_vert_wrap_var[:] = E_atl_vert
+        # close the file
+        data_wrap.close()
+        logging.info("Create netcdf files successfully!!")
+
+    def ncOHC(self, OHC, OHC_100, OHC_300, OHC_700, OHC_2000, OHC_vert, OHC_pac_vert, OHC_atl_vert,
+               year, nav_lat, nav_lon, nav_lev, gphiv, z, jj, ji, path, name='ORAS4'):
+        """
+        Save the OHC upto certain levels into netCDF files.
+        param OHC: total ocean heat content over the entire depth
+        param OHC_100: total ocean heat content from surface to 100m
+        param OHC_300: total ocean heat content from surface to 300m
+        param OHC_700: total ocean heat content from surface to 700m
+        param OHC_2000: total ocean heat content from surface to 2000m
+        param OHC_vert: Vertical profile of ocean heat content
+        param OHC_pac_vert: Vertical profile of ocean heat content in the Pacific Ocean
+        param OHC_atl_vert: Vertical profile of ocean heat content in the Atlantic Ocean
+
+        return: netCDF4 files containing OHC on the native grid.
+        rtype: netCDF4
+        """
+        logging.info("Start creating netcdf file for OHC at each grid point.")
+        if name == 'ORAS4':
+            data_wrap = Dataset(os.path.join(path, 'oras_model_monthly_{}_ohc_point.nc'.format(year)),
+                                'w',format = 'NETCDF4')
+        elif name == 'GLOTYS2V3':
+            data_wrap = Dataset(os.path.join(path, 'glorys_model_monthly_{}_ohc_point.nc'.format(year)),
+                                'w',format = 'NETCDF4')
+        elif name == 'SODA3':
+            data_wrap = Dataset(os.path.join(path, 'soda_model_5daily_{}_ohc_point.nc'.format(year)),
+                                'w',format = 'NETCDF4')
+        else:
+            raise IOError("This dataset is not supported in this module.")
+         # create dimensions for netcdf data
+        month_wrap_dim = data_wrap.createDimension('month',12)
+        depth_wrap_dim = data_wrap.createDimension('depth',z)
+        lat_wrap_dim = data_wrap.createDimension('jj',jj)
+        lon_wrap_dim = data_wrap.createDimension('ji',ji)
+        # create 1-dimension variables
+        month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+        depth_wrap_var = data_wrap.createVariable('depth',np.float32,('depth',))
+        lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('jj',))
+        # create 2-dimension variables
+        gphit_wrap_var = data_wrap.createVariable('gphit',np.float32,('jj','ji'))
+        glamt_wrap_var = data_wrap.createVariable('glamt',np.float32,('jj','ji'))
+        # create 3-dimension variables
+        OHC_0_wrap_var = data_wrap.createVariable('OHC_total',np.float32,('month','jj','ji'))
+        OHC_100_wrap_var = data_wrap.createVariable('OHC_100',np.float32,('month','jj','ji'))
+        OHC_300_wrap_var = data_wrap.createVariable('OHC_300',np.float32,('month','jj','ji'))
+        OHC_700_wrap_var = data_wrap.createVariable('OHC_700',np.float32,('month','jj','ji'))
+        OHC_2000_wrap_var = data_wrap.createVariable('OHC_2000',np.float32,('month','jj','ji'))
+        OHC_vert_wrap_var = data_wrap.createVariable('OHC_vert',np.float32,('month','depth','jj'))
+        OHC_pac_vert_wrap_var = data_wrap.createVariable('OHC_pac_vert',np.float32,('month','depth','jj'))
+        OHC_atl_vert_wrap_var = data_wrap.createVariable('OHC_atl_vert',np.float32,('month','depth','jj'))
+        # global attributes
+        data_wrap.description = 'Monthly mean ocean heat content fields.'
+        # variable attributes
+        OHC_0_wrap_var.units = 'Tera Joule'
+        OHC_100_wrap_var.units = 'Tera Joule'
+        OHC_300_wrap_var.units = 'Tera Joule'
+        OHC_700_wrap_var.units = 'Tera Joule'
+        OHC_2000_wrap_var.units = 'Tera Joule'
+        OHC_vert_wrap_var.units = 'Tera Joule'
+        OHC_pac_vert_wrap_var.units = 'Tera Joule'
+        OHC_atl_vert_wrap_var.units = 'Tera Joule'
+
+        OHC_0_wrap_var.long_name = 'total ocean heat content over the entire depth'
+        OHC_100_wrap_var.long_name = 'total ocean heat content from surface to 100m'
+        OHC_300_wrap_var.long_name = 'total ocean heat content from surface to 300m'
+        OHC_700_wrap_var.long_name = 'total ocean heat content from surface to 700m'
+        OHC_2000_wrap_var.long_name = 'total ocean heat content from surface to 2000m'
+        OHC_vert_wrap_var.long_name = 'zonal integral of ocean heat content for the globe'
+        OHC_pac_vert_wrap_var.long_name = 'zonal integral of ocean heat content in the Pacific Ocean'
+        OHC_pac_vert_wrap_var.long_name = 'zonal integral of ocean heat content in the Pacific Ocean'
+        # writing data
+        month_wrap_var[:] = np.arange(1,13,1)
+        depth_wrap_var[:] = nav_lev
+        lat_wrap_var[:] = gphiv[:,96]
+        gphit_wrap_var[:] = nav_lat
+        glamt_wrap_var[:] = nav_lon
+        
+        OHC_0_wrap_var[:] = OHC
+        OHC_100_wrap_var[:] = OHC_100
+        OHC_300_wrap_var[:] = OHC_300
+        OHC_700_wrap_var[:] = OHC_700
+        OHC_2000_wrap_var[:] = OHC_2000
+        OHC_vert_wrap_var[:] = OHC_vert
+        OHC_pac_vert_wrap_var[:] = OHC_pac_vert
+        OHC_atl_vert_wrap_var[:] = OHC_atl_vert
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
