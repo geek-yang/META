@@ -36,7 +36,7 @@ class savenc:
         """
         logging.info("Start creating netcdf file for baratropic corrected wind fields at each grid point.")
         if name == 'ERAI':
-            data_wrap = Dataset(os.path.join(path, 'erai_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),
+            data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),
                                 'w',format = 'NETCDF4')
         elif name == 'MERRA2':
             data_wrap = Dataset(os.path.join(path, 'merra_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),

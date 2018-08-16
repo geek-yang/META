@@ -60,8 +60,8 @@ class assembly:
         data_example = Dataset(os.path.join(self.in_path,
                                '{}_model_subdaily_{}_amet_point.nc'.format(alias,self.year_start)))
         level = data_example.variables['level'][:]
-        latitude = data_example.variables['latitude'][:]
-        longitude = data_example.variables['longitude'][:]
+        lat = data_example.variables['latitude'][:]
+        lon = data_example.variables['longitude'][:]
         # create space for the output
         # the number at the end of each name indicates the integral
         # from surface to a certain height (hPa)
@@ -122,7 +122,7 @@ class assembly:
         uv2_850_int = np.zeros((len(year),len(month),len(lat)), dtype=float)
         for i in year:
             data_key = Dataset(os.path.join(self.in_path,
-                               '{}_model_subdaily_{}_omet_point.nc'.format(alias, i)))
+                               '{}_model_subdaily_{}_amet_point.nc'.format(alias, i)))
             E_0[i-self.year_start,:,:,:] = data_key.variables['E_total'][:]
             cpT_0[i-self.year_start,:,:,:] = data_key.variables['cpT_total'][:]
             Lvq_0[i-self.year_start,:,:,:] = data_key.variables['Lvq_total'][:]
@@ -339,8 +339,8 @@ class assembly:
         year_wrap_var[:] = year
         month_wrap_var[:] = np.arange(1,13,1)
         level_wrap_var[:] = level
-        lat_wrap_var[:] = latitude
-        lon_wrap_var[:] = longitude
+        lat_wrap_var[:] = lat
+        lon_wrap_var[:] = lon
         
         E_0_wrap_var[:] = E_0
         cpT_0_wrap_var[:] = cpT_0

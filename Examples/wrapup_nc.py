@@ -30,7 +30,7 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     #oras_instance = meta.wrapup.assembly(1958, 2017, input_path, output_path)
-    erai_instance = meta.wrapup.assembly(1979, 2017, input_path, output_path)
+    erai_instance = meta.wrapup.assembly(1979, 2016, input_path, output_path)
     # load subbasin mask
     #subbasin_key = Dataset(mask_subbasin_path)
     #tmaskpac = subbasin_key.variables['tmaskpac_ORCA1'][:]
