@@ -49,22 +49,19 @@ class operator:
             if self.var.ndim == 2:
                 t, m = white_var.shape
                 for i in np.arange(t):
-                    for j in np.arange(m):
-                        white_var[i,j] = self.var[i,j] - seansonal_cycle_var[j]
+                        white_var[i,:] = self.var[i,:] - seansonal_cycle_var[:]
                 # re-arrange into single time series - without month dimension
                 white_var = white_var.reshape(t*m)
             elif self.var.ndim == 3:
                 t, m, y = white_var.shape
                 for i in np.arange(t):
-                    for j in np.arange(m):
-                        white_var[i,j,:] = self.var[i,j,:] - seansonal_cycle_var[j,:]
+                        white_var[i,:,:] = self.var[i,:,:] - seansonal_cycle_var[:]
                 # re-arrange into single time series - without month dimension
                 white_var = white_var.reshape(t*m,y)
             elif self.var.ndim == 4:
                 t, m, y, x = white_var.shape
                 for i in np.arange(t):
-                    for j in np.arange(m):
-                        white_var[i,j,:,:] = self.var[i,j,:,:] - seansonal_cycle_var[j,:,:]
+                        white_var[i,:,:,:] = self.var[i,:,:,:] - seansonal_cycle_var[:]
                 # re-arrange into single time series - without month dimension
                 white_var = white_var.reshape(t*m,y,x)
             else:
@@ -219,8 +216,36 @@ class operator:
                     IOError("The lead / lag coefficient should be positive integers.")
             else:
                 raise IOError("The input time series must have dimensions @time,latitude@!")
+        elif var_y.ndim == 2 and var_x.ndim == 1:
+            print("A time series is regressed on a 1D field.")
+            if lag == 0:
+                t, y  = var_y.shape
+                slope = np.zeros(y, dtype=float)
+                r_value = np.zeros(y, dtype=float)
+                p_value = np.zeros(y, dtype=float)
+                for i in np.arange(y):
+                    slope[i], _, r_value[i], p_value[i], _ = stats.linregress(var_x[:], var_y[:,i])
+            elif lag > 0:
+                print ("This a regression with lead/lag analysis.")
+                t, y  = var_y.shape
+                lag_index = np.arange(-lag,lag+1,1)
+                slope = np.zeros((len(lag_index),y), dtype=float)
+                r_value = np.zeros((len(lag_index),y), dtype=float)
+                p_value = np.zeros((len(lag_index),y), dtype=float)
+                # regress
+                for i in np.arange(len(lag_index)):
+                    for j in np.arange(y):
+                        if lag_index[i]<0: # var_x lead var_y
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                            var_x[:lag_index[i]], var_y[-lag_index[i]:,j])
+                        elif lag_index[i]>0: # var_y lead var_x
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                            var_x[lag_index[i]:], var_y[:-lag_index[i],j])
+                        else:
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
+                                            var_x[:], var_y[:,j])                
         elif var_y.ndim == 3 and var_x.ndim == 1:
-            print("A time series is regressed on a field.")
+            print("A time series is regressed on a 2D field.")
             if lag == 0:
                 t, y, x  = var_y.shape
                 slope = np.zeros((y, x), dtype=float)
@@ -229,7 +254,7 @@ class operator:
                 for i in np.arange(y):
                     for j in np.arange(x):
                         slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x, var_y[:,i,j])
-            elif lag > 0:
+            elif type(lag) == int:
                 print ("This a regression with lead/lag analysis.")
                 print ("Positive lag means 2nd input leads 1st, vice versa.")
                 t, y, x  = var_y.shape
@@ -238,7 +263,12 @@ class operator:
                 p_value = np.zeros((y, x), dtype=float)
                 for i in np.arange(y):
                     for j in np.arange(x):
-                        slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[lag:], var_y[:-lag,i,j])
+                        if lag > 0:
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[lag:],
+                                                                                            var_y[:-lag,i,j])
+                        elif lag < 0:
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[:lag],
+                                                                                            var_y[-lag:,i,j])                           
             else:
                 IOError("The lead / lag coefficient should be integers.")
         else:
