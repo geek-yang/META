@@ -333,3 +333,138 @@ class oras:
         
         return nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t,\
                e1v, e2v, gphiv, glamv, mbathy, e3t_0, e3t_ps
+    
+    def eddies(self, year_start, year_end, path_mask, path_submask):
+        """
+        Decompose the eddy contributions for the Meridional Energy Transport.
+        param year_start: the starting time for the calculation
+        param year_end: the ending time for the calculation
+        param path_mask: location of the file containing land sea mask and coordinate info
+        param path_submask: land-sea mask of the sub-basin
+        
+        return: arrays containing OMET upto differnt depth levels
+        rtype: netCDF4
+        """
+        # set up logging files to monitor the calculation
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_eddy.log') ,
+                            filemode = 'w+', level = logging.DEBUG,
+                            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # initialize the time span
+        year = np.arange(year_start, year_end+1, 1)
+        month = np.arange(1, 13, 1)
+        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # extract information from land-sea mask file
+        nav_lat, nav_lon, nav_lev, tmask, vmask, e1t, e2t, e1v, e2v,\
+        gphiv, glamv, mbathy, e3t_0, e3t_ps = self.mask(path_mask)
+        logging.info('Successfully retrieving the ORCA1 coordinate and mask info!')
+        # obtain the land-sea mask of sub-ocean basins
+        subbasin_key = Dataset(path_submask)
+        tmaskpac = subbasin_key.variables['tmaskpac_ORCA1'][:]
+        tmaskatl = subbasin_key.variables['tmaskatl_ORCA1'][:]
+        # obtain dimensions
+        jj, ji = nav_lat.shape
+        z = len(nav_lev)
+        # construct partial cell depth matrix
+        # the size of partial cell is given by e3t_ps
+        # for the sake of simplicity of the code, just calculate the difference between e3t_0 and e3t_ps
+        # then minus this adjustment when calculate the OMET at each layer with mask
+        # Attention! Since python start with 0, the partial cell info given in mbathy should incoporate with this
+        e3t_adjust = np.zeros((z,jj,ji),dtype = float)
+        for i in np.arange(1,z,1): # start from 1
+            for j in np.arange(jj):
+                for k in np.arange(ji):
+                    if i == mbathy[j,k]:
+                        e3t_adjust[i-1,j,k] = e3t_0[i-1] - e3t_ps[j,k] # python start with 0, so i-1
+        # create arrays to store the output data
+        # steady mean
+        E_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_100_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_300_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_700_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_2000_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_pac_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_pac_100_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_pac_300_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_pac_700_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_pac_2000_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_atl_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_atl_100_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_atl_300_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_atl_700_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        E_atl_2000_eddy_steady_mean = np.zeros((len(month), jj), dtype=float)
+        # stationary mean
+        E_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_100_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_300_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_700_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_2000_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_vert_eddy_stationary_mean = np.zeros((len(month), z, jj), dtype=float)
+        E_pac_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_pac_100_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_pac_300_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_pac_700_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_pac_2000_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)        
+        E_pac_vert_eddy_stationary_mean = np.zeros((len(month), z, jj), dtype=float)
+        E_atl_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_atl_100_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_atl_300_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_atl_700_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)
+        E_atl_2000_eddy_stationary_mean = np.zeros((len(month), jj, ji), dtype=float)        
+        E_atl_vert_eddy_stationary_mean = np.zeros((len(month), z, jj), dtype=float)
+        # loop for the computation of OMET
+        for i in year:
+            logging.info("Start retrieving variables for {}(y)".format(i))
+            datapath_theta = os.path.join(self.path, 'theta', 'thetao_oras4_1m_{}_grid_T.nc'.format(i))
+            datapath_v = os.path.join(self.path, 'v', 'vo_oras4_1m_{}_grid_V.nc'.format(i))
+            theta_key = Dataset(datapath_theta)
+            v_key = Dataset(datapath_v)
+            theta = theta_key.variables['thetao'][:] # the unit of theta is Celsius!
+            theta_nomask = theta.data
+            theta_nomask[theta.mask == True] = 0
+            v = v_key.variables['vo'][:]
+            v_nomask = v.data
+            v_nomask[v.mask == True] = 0
+            logging.info("Extracting variables successfully!")
+            # calculate the meridional velocity at T grid
+            T_vgrid = np.zeros((len(month),z,jj,ji),dtype=float)
+            for c in np.arange(jj):
+                if c == jj-1:
+                    T_vgrid[:,:,c,:] = theta_nomask[:,:,c,:]
+                else:
+                    T_vgrid[:,:,c,:] = (theta_nomask[:,:,c,:] + theta_nomask[:,:,c+1,:])/2
+            # as the module omet is designed to process data per month, we add a loop for month
+            for j in month:
+                OMET = meta.omet.eddy()
+                E_eddy_steady_mean[j-1,:], E_100_eddy_steady_mean[j-1,:], E_300_eddy_steady_mean[j-1,:],\
+                E_700_eddy_steady_mean[j-1,:], E_2000_eddy_steady_mean[j-1,:], E_pac_eddy_steady_mean[j-1,:],\
+                E_pac_100_eddy_steady_mean[j-1,:], E_pac_300_eddy_steady_mean[j-1,:], E_pac_700_eddy_steady_mean[j-1,:],\
+                E_pac_2000_eddy_steady_mean[j-1,:], E_atl_eddy_steady_mean[j-1,:], E_atl_100_eddy_steady_mean[j-1,:],\
+                E_atl_300_eddy_steady_mean[j-1,:], E_atl_700_eddy_steady_mean[j-1,:], E_atl_2000_eddy_steady_mean[j-1,:],\
+                E_eddy_stationary_mean[j-1,:,:], E_100_eddy_stationary_mean[j-1,:,:], E_300_eddy_stationary_mean[j-1,:,:],\
+                E_700_eddy_stationary_mean[j-1,:,:], E_2000_eddy_stationary_mean[j-1,:,:], E_vert_eddy_stationary_mean[j-1,:,:],\
+                E_pac_eddy_stationary_mean[j-1,:,:], E_pac_100_eddy_stationary_mean[j-1,:,:],\
+                E_pac_300_eddy_stationary_mean[j-1,:,:], E_pac_700_eddy_stationary_mean[j-1,:,:],\
+                E_pac_2000_eddy_stationary_mean[j-1,:,:], E_pac_vert_eddy_stationary_mean[j-1,:,:],\
+                E_atl_eddy_stationary_mean[j-1,:,:], E_atl_100_eddy_stationary_mean[j-1,:,:],\
+                E_atl_300_eddy_stationary_mean[j-1,:,:], E_atl_700_eddy_stationary_mean[j-1,:,:],\
+                E_atl_2000_eddy_stationary_mean[j-1,:,:], E_atl_vert_eddy_stationary_mean[j-1,:,:]\
+                = OMET.calc_eddy(T_vgrid[j-1,:,:,:], v_nomask[j-1,:,:,:], vmask, e1v, e3t_0,
+                                e3t_adjust, tmaskpac, tmaskatl, z, jj, ji, self.z_100,self.z_300,
+                                self.z_700, self.z_2000)
+            # save output as netCDF files
+            packing = meta.saveNetCDF.savenc()
+            packing.ncEddyomet(E_eddy_steady_mean, E_100_eddy_steady_mean, E_300_eddy_steady_mean,
+                               E_700_eddy_steady_mean, E_2000_eddy_steady_mean, E_pac_eddy_steady_mean,
+                               E_pac_100_eddy_steady_mean, E_pac_300_eddy_steady_mean, E_pac_700_eddy_steady_mean,
+                               E_pac_2000_eddy_steady_mean, E_atl_eddy_steady_mean, E_atl_100_eddy_steady_mean,
+                               E_atl_300_eddy_steady_mean, E_atl_700_eddy_steady_mean, E_atl_2000_eddy_steady_mean,
+                               E_eddy_stationary_mean, E_100_eddy_stationary_mean, E_300_eddy_stationary_mean,
+                               E_700_eddy_stationary_mean, E_2000_eddy_stationary_mean, E_vert_eddy_stationary_mean,
+                               E_pac_eddy_stationary_mean, E_pac_100_eddy_stationary_mean, E_pac_300_eddy_stationary_mean,
+                               E_pac_700_eddy_stationary_mean, E_pac_2000_eddy_stationary_mean,
+                               E_pac_vert_eddy_stationary_mean, E_atl_eddy_stationary_mean, E_atl_100_eddy_stationary_mean,
+                               E_atl_300_eddy_stationary_mean, E_atl_700_eddy_stationary_mean,
+                               E_atl_2000_eddy_stationary_mean, E_atl_vert_eddy_stationary_mean,
+                               i, gphiv, glamv, nav_lev, z, jj, ji, self.out_path) 
+        logging.info('The entire pipeline is complete!')
+                

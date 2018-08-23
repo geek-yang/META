@@ -260,12 +260,6 @@ class savenc:
         """
         logging.info("Create netcdf files successfully!!")
 
-    def ncEddyomet(self):
-        """
-        Save the eddy components of OMET and its components upto certain levels into netCDF files.
-        """
-        logging.info("Create netcdf files successfully!!")
-
     def ncOMET(self, E, E_100, E_300, E_700, E_2000, E_vert, E_pac_vert, E_atl_vert,
                year, gphiv, glamv, nav_lev, z, jj, ji, path, name='ORAS4'):
         """
@@ -382,7 +376,7 @@ class savenc:
                                 'w',format = 'NETCDF4')
         else:
             raise IOError("This dataset is not supported in this module.")
-         # create dimensions for netcdf data
+        # create dimensions for netcdf data
         month_wrap_dim = data_wrap.createDimension('month',12)
         depth_wrap_dim = data_wrap.createDimension('depth',z)
         lat_wrap_dim = data_wrap.createDimension('jj',jj)
@@ -441,3 +435,206 @@ class savenc:
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
+
+    def ncEddyomet(self, E_eddy_steady_mean, E_100_eddy_steady_mean, E_300_eddy_steady_mean,
+                   E_700_eddy_steady_mean, E_2000_eddy_steady_mean, E_pac_eddy_steady_mean,
+                   E_pac_100_eddy_steady_mean, E_pac_300_eddy_steady_mean, E_pac_700_eddy_steady_mean,
+                   E_pac_2000_eddy_steady_mean, E_atl_eddy_steady_mean, E_atl_100_eddy_steady_mean,
+                   E_atl_300_eddy_steady_mean, E_atl_700_eddy_steady_mean, E_atl_2000_eddy_steady_mean,
+                   E_eddy_stationary_mean, E_100_eddy_stationary_mean, E_300_eddy_stationary_mean,
+                   E_700_eddy_stationary_mean, E_2000_eddy_stationary_mean, E_vert_eddy_stationary_mean,
+                   E_pac_eddy_stationary_mean, E_pac_100_eddy_stationary_mean, E_pac_300_eddy_stationary_mean,
+                   E_pac_700_eddy_stationary_mean, E_pac_2000_eddy_stationary_mean,
+                   E_pac_vert_eddy_stationary_mean, E_atl_eddy_stationary_mean, E_atl_100_eddy_stationary_mean,
+                   E_atl_300_eddy_stationary_mean, E_atl_700_eddy_stationary_mean,
+                   E_atl_2000_eddy_stationary_mean, E_atl_vert_eddy_stationary_mean,
+                   year, gphiv, glamv, nav_lev, z, jj, ji, path, name='ORAS4'):
+        """
+        Save the eddy components of OMET and its components upto certain levels into netCDF files.
+        param E_eddy_steady_mean: energy transport by steady mean flow over the entire depth
+        param E_100_eddy_steady_mean: energy transport by steady mean flow from surface to 100m
+        
+        param name: name of the reanalysis products. There are options
+        - ORAS4 (default)
+        - GLORYS2V3
+        - SODA3
+        param temporal: the temporal resolution that the original calculation is based on. Two options below
+        - monthly (default)
+        - 5daily        
+        """
+        logging.info("Start creating netcdf file for eddy components at each grid point.")
+        if name == 'ORAS4':
+            alias = 'oras'
+        elif name == 'GLOTYS2V3':
+            alias = 'glorys'
+        elif name == 'SODA3':
+            alias = 'soda'
+        else:
+            raise IOError("This dataset is not supported in this module.")
+        
+        data_wrap = Dataset(os.path.join(path,'{}_model_monthly_{}_E_eddy_point.nc'.format(alias, year)),
+                            'w',format = 'NETCDF4')
+        # create dimensions for netcdf data
+        month_wrap_dim = data_wrap.createDimension('month',12)
+        depth_wrap_dim = data_wrap.createDimension('depth',z)
+        lat_wrap_dim = data_wrap.createDimension('jj',jj)
+        lon_wrap_dim = data_wrap.createDimension('ji',ji)
+        # create 1-dimension variables
+        month_wrap_var = data_wrap.createVariable('month',np.int32,('month',))
+        depth_wrap_var = data_wrap.createVariable('depth',np.float32,('depth',))
+        lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('jj',))
+        # create 2-dimension variables
+        gphiv_wrap_var = data_wrap.createVariable('gphiv',np.float32,('jj','ji'))
+        glamv_wrap_var = data_wrap.createVariable('glamv',np.float32,('jj','ji'))
+        # create 2-dimension variables
+        E_0_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_eddy_steady_mean',np.float32,('month','jj'))
+        E_100_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_100_eddy_steady_mean',np.float32,('month','jj'))
+        E_300_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_300_eddy_steady_mean',np.float32,('month','jj'))
+        E_700_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_700_eddy_steady_mean',np.float32,('month','jj'))
+        E_2000_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_2000_eddy_steady_mean',np.float32,('month','jj'))
+        E_pac_0_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_pac_eddy_steady_mean',np.float32,('month','jj'))
+        E_pac_100_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_pac_100_eddy_steady_mean',np.float32,('month','jj'))
+        E_pac_300_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_pac_300_eddy_steady_mean',np.float32,('month','jj'))
+        E_pac_700_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_pac_700_eddy_steady_mean',np.float32,('month','jj'))
+        E_pac_2000_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_pac_2000_eddy_steady_mean',np.float32,('month','jj'))
+        E_atl_0_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_atl_eddy_steady_mean',np.float32,('month','jj'))
+        E_atl_100_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_atl_100_eddy_steady_mean',np.float32,('month','jj'))
+        E_atl_300_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_atl_300_eddy_steady_mean',np.float32,('month','jj'))
+        E_atl_700_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_atl_700_eddy_steady_mean',np.float32,('month','jj'))
+        E_atl_2000_eddy_steady_mean_wrap_var = data_wrap.createVariable('E_atl_2000_eddy_steady_mean',np.float32,('month','jj'))
+        # create 3-dimension variables
+        E_0_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_100_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_100_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_300_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_300_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_700_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_700_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_2000_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_2000_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_vert_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_vert_eddy_stationary_mean',np.float32,('month','depth','jj'))
+        E_pac_0_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_pac_100_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_100_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_pac_300_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_300_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_pac_700_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_700_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_pac_2000_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_2000_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_pac_vert_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_pac_vert_eddy_stationary_mean',np.float32,('month','depth','jj'))
+        E_atl_0_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_atl_100_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_100_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_atl_300_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_300_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_atl_700_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_700_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_atl_2000_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_2000_eddy_stationary_mean',np.float32,('month','jj','ji'))
+        E_atl_vert_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_vert_eddy_stationary_mean',np.float32,('month','depth','jj'))        
+        # global attributes
+        data_wrap.description = 'Monthly mean eddy components of meridional energy transport fields.'
+        # variable attributes
+        E_0_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_100_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_300_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_700_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_2000_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_pac_0_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_pac_100_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_pac_300_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_pac_700_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_pac_2000_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_atl_0_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_atl_100_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_atl_300_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_atl_700_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        E_atl_2000_eddy_steady_mean_wrap_var.units = 'Tera Joule'
+        
+        E_0_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_100_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_300_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_700_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_2000_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_vert_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_0_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_100_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_300_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_700_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_2000_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_pac_vert_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_0_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_100_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_300_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_700_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_2000_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+        E_atl_vert_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
+
+        E_0_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow over the entire depth'
+        E_100_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 100m'
+        E_300_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 300m'
+        E_700_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 700m'
+        E_2000_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 2000m'
+        E_pac_0_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow over the entire depth in the Pacific'
+        E_pac_100_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 100m in the Pacific'
+        E_pac_300_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 300m in the Pacific'
+        E_pac_700_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 700m in the Pacific'
+        E_pac_2000_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 2000m in the Pacific'
+        E_atl_0_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow over the entire depth in the Atlantic'
+        E_atl_100_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 100m in the Atlantic'
+        E_atl_300_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 300m in the Atlantic'
+        E_atl_700_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 700m in the Atlantic'
+        E_atl_2000_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 2000m in the Atlantic'
+        
+        E_0_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow over the entire depth'
+        E_100_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 100m'
+        E_300_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 300m'
+        E_700_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 700m'
+        E_2000_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 2000m'
+        E_vert_eddy_stationary_mean_wrap_var.long_name = 'Vertical profile of energy transport by stationary mean flow'
+        E_pac_0_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow over the entire depth in the Pacific'
+        E_pac_100_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 100m in the Pacific'
+        E_pac_300_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 300m in the Pacific'
+        E_pac_700_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 700m in the Pacific'
+        E_pac_2000_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 2000m in the Pacific'
+        E_pac_vert_eddy_stationary_mean_wrap_var.long_name = 'Vertical profile of energy transport by stationary mean flow in the Pacific'
+        E_atl_0_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow over the entire depth in the Atlantic'
+        E_atl_100_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 100m in the Atlantic'
+        E_atl_300_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 300m in the Atlantic'
+        E_atl_700_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 700m in the Atlantic'
+        E_atl_2000_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 2000m in the Atlantic'
+        E_atl_vert_eddy_stationary_mean_wrap_var.long_name = 'Vertical profile of energy transport by stationary mean flow in the Atlantic'
+        # writing data
+        month_wrap_var[:] = np.arange(1,13,1)
+        depth_wrap_var[:] = nav_lev
+        lat_wrap_var[:] = gphiv[:,96]
+        gphiv_wrap_var[:] = gphiv
+        glamv_wrap_var[:] = glamv
+        
+        E_0_eddy_steady_mean_wrap_var[:] = E_eddy_steady_mean
+        E_100_eddy_steady_mean_wrap_var[:] = E_100_eddy_steady_mean
+        E_300_eddy_steady_mean_wrap_var[:] = E_300_eddy_steady_mean
+        E_700_eddy_steady_mean_wrap_var[:] = E_700_eddy_steady_mean
+        E_2000_eddy_steady_mean_wrap_var[:] = E_2000_eddy_steady_mean
+        E_pac_0_eddy_steady_mean_wrap_var[:] = E_pac_eddy_steady_mean
+        E_pac_100_eddy_steady_mean_wrap_var[:] = E_pac_100_eddy_steady_mean
+        E_pac_300_eddy_steady_mean_wrap_var[:] = E_pac_300_eddy_steady_mean
+        E_pac_700_eddy_steady_mean_wrap_var[:] = E_pac_700_eddy_steady_mean
+        E_pac_2000_eddy_steady_mean_wrap_var[:] = E_pac_2000_eddy_steady_mean
+        E_atl_0_eddy_steady_mean_wrap_var[:] = E_atl_eddy_steady_mean
+        E_atl_100_eddy_steady_mean_wrap_var[:] = E_atl_100_eddy_steady_mean
+        E_atl_300_eddy_steady_mean_wrap_var[:] = E_atl_300_eddy_steady_mean
+        E_atl_700_eddy_steady_mean_wrap_var[:] = E_atl_700_eddy_steady_mean
+        E_atl_2000_eddy_steady_mean_wrap_var[:] = E_atl_2000_eddy_steady_mean
+        
+        E_0_eddy_stationary_mean_wrap_var[:] = E_eddy_stationary_mean
+        E_100_eddy_stationary_mean_wrap_var[:] = E_100_eddy_stationary_mean
+        E_300_eddy_stationary_mean_wrap_var[:] = E_300_eddy_stationary_mean
+        E_700_eddy_stationary_mean_wrap_var[:] = E_700_eddy_stationary_mean
+        E_2000_eddy_stationary_mean_wrap_var[:] = E_2000_eddy_stationary_mean
+        E_vert_eddy_stationary_mean_wrap_var[:] = E_vert_eddy_stationary_mean
+        E_pac_0_eddy_stationary_mean_wrap_var[:] = E_pac_eddy_stationary_mean
+        E_pac_100_eddy_stationary_mean_wrap_var[:] = E_pac_100_eddy_stationary_mean
+        E_pac_300_eddy_stationary_mean_wrap_var[:] = E_pac_300_eddy_stationary_mean
+        E_pac_700_eddy_stationary_mean_wrap_var[:] = E_pac_700_eddy_stationary_mean
+        E_pac_2000_eddy_stationary_mean_wrap_var[:] = E_pac_2000_eddy_stationary_mean
+        E_pac_vert_eddy_stationary_mean_wrap_var[:] = E_pac_vert_eddy_stationary_mean
+        E_atl_0_eddy_stationary_mean_wrap_var[:] = E_atl_eddy_stationary_mean
+        E_atl_100_eddy_stationary_mean_wrap_var[:] = E_atl_100_eddy_stationary_mean
+        E_atl_300_eddy_stationary_mean_wrap_var[:] = E_atl_300_eddy_stationary_mean
+        E_atl_700_eddy_stationary_mean_wrap_var[:] = E_atl_700_eddy_stationary_mean
+        E_atl_2000_eddy_stationary_mean_wrap_var[:] = E_atl_2000_eddy_stationary_mean
+        E_atl_vert_eddy_stationary_mean_wrap_var[:] = E_atl_vert_eddy_stationary_mean
+        # close the file
+        data_wrap.close()
+        logging.info("Create netcdf files successfully!!")
+        
