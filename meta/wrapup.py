@@ -891,7 +891,7 @@ class assembly:
         - monthly (default)
         - 5daily 
         """
-        logging.info("Start wrap-up all the netcdf files of OHC and calculate the zonal mean of each variable.")
+        logging.info("Start wrap-up all the netcdf files of eddies and calculate the zonal mean of each variable.")
         if name == 'ORAS4':
             alias = 'oras'
         elif name == 'GLOTYS2V3':
@@ -905,15 +905,15 @@ class assembly:
         month = np.arange(1, 13, 1)        
         # load dimensions from input files
         data_example = Dataset(os.path.join(self.in_path,
-                               '{}_model_{}_{}_ohc_point.nc'.format(alias, temporal, self.year_start)))
+                               '{}_model_{}_{}_E_eddy_point.nc'.format(alias, temporal, self.year_start)))
         depth = data_example.variables['depth'][:]
         latitude_aux = data_example.variables['latitude_aux'][:]
-        gphit = data_example.variables['gphit'][:]
-        glamt = data_example.variables['glamt'][:]
+        gphiv = data_example.variables['gphiv'][:]
+        glamv = data_example.variables['glamv'][:]
         # dimension size
         t = len(year)
         z = len(depth)
-        jj, ji = gphit.shape
+        jj, ji = gphiv.shape
         # create arrays to store all the data and postprocess
         # steady mean
         E_eddy_steady_mean = np.zeros((t, len(month), jj), dtype=float)
@@ -1040,8 +1040,8 @@ class assembly:
         depth_wrap_var = data_wrap.createVariable('depth',np.float32,('depth',))
         lat_wrap_var = data_wrap.createVariable('latitude_aux',np.float32,('jj',))
         # create 2-dimension variables
-        gphit_wrap_var = data_wrap.createVariable('gphit',np.float32,('jj','ji'))
-        glamt_wrap_var = data_wrap.createVariable('glamt',np.float32,('jj','ji'))
+        gphiv_wrap_var = data_wrap.createVariable('gphiv',np.float32,('jj','ji'))
+        glamv_wrap_var = data_wrap.createVariable('glamv',np.float32,('jj','ji'))
         tmaskpac_wrap_var = data_wrap.createVariable('tmaskpac',np.int32,('jj','ji'))
         tmaskatl_wrap_var = data_wrap.createVariable('tmaskatl',np.int32,('jj','ji'))
         # create 3-dimension variables
@@ -1200,11 +1200,14 @@ class assembly:
         E_atl_700_eddy_stationary_mean_int_wrap_var.long_name = 'Zonal integral of energy transport by stationary mean flow from surface to 700m in the Atlantic'
         E_atl_2000_eddy_stationary_mean_int_wrap_var.long_name = 'Zonal integral of energy transport by stationary mean flow from surface to 2000m in the Atlantic'
         # writing data
+        year_wrap_var[:] = year
         month_wrap_var[:] = np.arange(1,13,1)
-        depth_wrap_var[:] = nav_lev
-        lat_wrap_var[:] = gphiv[:,96]
+        depth_wrap_var[:] = depth
+        lat_wrap_var[:] = latitude_aux
         gphiv_wrap_var[:] = gphiv
         glamv_wrap_var[:] = glamv
+        tmaskpac_wrap_var[:] = tmaskpac
+        tmaskatl_wrap_var[:] = tmaskatl
         
         E_0_eddy_steady_mean_wrap_var[:] = E_eddy_steady_mean
         E_100_eddy_steady_mean_wrap_var[:] = E_100_eddy_steady_mean

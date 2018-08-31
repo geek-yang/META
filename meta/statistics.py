@@ -277,15 +277,26 @@ class operator:
         return slope, r_value, p_value
 
     @staticmethod
-    def seasons(series, Dim_month=False):
+    def seasons(series, span='DJF', Dim_month=False):
         """
-        Extract time series for summer / winter from given series.
-        The given time series should include the time series of all seasons.
-        Here summer is June, July and August, and winter is December, January and
-        February.
+        Extract time series for certain months from given series.
+        The given time series should include the time series of all seasons, starting
+        from January to December.
+        The module extracts 3 month per year based on given argument to incoorporate
+        with lead / lag regressions with following modules.
         param series: input time series containing the data for all seasons.
+        param span: Target months for data extraction. Following options are available:
+        - DJF (default) December, January and February (winter)
+        - JJA June, July, August (summer)
+        - NDJ November, December and January
+        - OND October, November, December
+        - SON September, October, November (autumn)
+        - MJJ May, June, July
+        - AMJ April, May, June 
+        - MAM March, April, May (spring)
         param Dim_month: A check whether the time series include the dimension of month.
         """
+        # rearange the input series
         if Dim_month == True:
             if series.ndim == 2:
                 t, m = series.shape
@@ -301,48 +312,55 @@ class operator:
                               dimension higher than 4!")
         else:
             pass
+        # select the months for extraction
+        month_1 = 0
+        # months combinations except 'DJF' 'NDJ'
+        if span == 'JJA':
+            month_1 = 6
+        elif span == 'OND':
+            month_1 = 10
+        elif span == 'SON':
+            month_1 = 9
+        elif span == 'MJJ':
+            month_1 = 5
+        elif span == 'AMJ':
+            month_1 = 4
+        elif span == 'MAM':
+            month_1 = 3
+        month_2 = month_1 + 1
+        month_3 = month_1 + 2
+        # now we deal with the exception
+        if span == 'DJF':
+            month_1 = 1
+            month_2 = 2
+            month_3 = 12
+        elif span == 'NDJ':
+            month_1 = 1
+            month_2 = 11
+            month_3 = 12
         # seperate summer and winter from the rest of the months
         if series.ndim == 1:
             t = len(series)
-            series_summer = np.zeros(t/4,dtype=float)
-            series_winter = np.zeros(t/4,dtype=float)
-            # obtain summer time series
-            series_summer[0::3] = series[5::12] #June
-            series_summer[1::3] = series[6::12] #July
-            series_summer[2::3] = series[7::12] #August
-            # obtain winter time series
-            series_winter[2::3] = series[11::12]#December
-            series_winter[0::3] = series[0::12] #January
-            series_winter[1::3] = series[1::12] #February
+            series_season = np.zeros(t/4,dtype=float)
+            series_season[0::3] = series[month_1-1::12]
+            series_season[1::3] = series[month_2-1::12]
+            series_season[2::3] = series[month_3-1::12]
         elif series.ndim == 2:
             t, y = series.shape
-            series_summer = np.zeros((t/4,y),dtype=float)
-            series_winter = np.zeros((t/4,y),dtype=float)
-              # obtain summer time series
-            series_summer[0::3,:] = series[5::12,:] #June
-            series_summer[1::3,:] = series[6::12,:] #July
-            series_summer[2::3,:] = series[7::12,:] #August
-            # obtain winter time series
-            series_winter[2::3,:] = series[11::12,:]#December
-            series_winter[0::3,:] = series[0::12,:] #January
-            series_winter[1::3,:] = series[1::12,:] #February              
+            series_season = np.zeros((t/4,y),dtype=float)
+            series_season[0::3,:] = series[month_1-1::12,:]
+            series_season[1::3,:] = series[month_2-1::12,:]
+            series_season[2::3,:] = series[month_3-1::12,:]        
         elif series.ndim == 3:
             t, y, x = series.shape
-            series_summer = np.zeros((t/4,y,x),dtype=float)
-            series_winter = np.zeros((t/4,y,x),dtype=float)
-              # obtain summer time series
-            series_summer[0::3,:,:] = series[5::12,:,:] #June
-            series_summer[1::3,:,:] = series[6::12,:,:] #July
-            series_summer[2::3,:,:] = series[7::12,:,:] #August
-            # obtain winter time series
-            series_winter[2::3,:,:] = series[11::12,:,:]#December
-            series_winter[0::3,:,:] = series[0::12,:,:] #January
-            series_winter[1::3,:,:] = series[1::12,:,:] #February
+            series_season = np.zeros((t/4,y,x),dtype=float)
+            series_season[0::3,:,:] = series[month_1-1::12,:,:]
+            series_season[1::3,:,:] = series[month_2-1::12,:,:]
+            series_season[2::3,:,:] = series[month_3-1::12,:,:]
         else:
             raise IOError("This module can not work with any array with a \
-                           dimension higher than 3!")            
-        
-        return series_summer, series_winter
+                           dimension higher than 3!")
+        return series_season
         
     @staticmethod
     def interpolation(series, lat_nav, lat_tar, interp_kind='slinear',Dim_month=True):
