@@ -341,19 +341,19 @@ class operator:
         # seperate summer and winter from the rest of the months
         if series.ndim == 1:
             t = len(series)
-            series_season = np.zeros(t/4,dtype=float)
+            series_season = np.zeros(t//4,dtype=float)
             series_season[0::3] = series[month_1-1::12]
             series_season[1::3] = series[month_2-1::12]
             series_season[2::3] = series[month_3-1::12]
         elif series.ndim == 2:
             t, y = series.shape
-            series_season = np.zeros((t/4,y),dtype=float)
+            series_season = np.zeros((t//4,y),dtype=float)
             series_season[0::3,:] = series[month_1-1::12,:]
             series_season[1::3,:] = series[month_2-1::12,:]
             series_season[2::3,:] = series[month_3-1::12,:]        
         elif series.ndim == 3:
             t, y, x = series.shape
-            series_season = np.zeros((t/4,y,x),dtype=float)
+            series_season = np.zeros((t//4,y,x),dtype=float)
             series_season[0::3,:,:] = series[month_1-1::12,:,:]
             series_season[1::3,:,:] = series[month_2-1::12,:,:]
             series_season[2::3,:,:] = series[month_3-1::12,:,:]
