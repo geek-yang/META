@@ -184,8 +184,8 @@ class operator:
         """
         # check the dimensions of input time series
         if var_x.shape == var_y.shape:
-            print("One time series is regressed on another.")
             if var_y.ndim == 2:
+                print("One time series with 2 dimensions is regressed on another.")
                 if lag == 0:
                     t, y  = var_y.shape
                     slope = np.zeros(y, dtype=float)
@@ -214,10 +214,35 @@ class operator:
                                                var_x[:,j], var_y[:,j])
                 else:
                     IOError("The lead / lag coefficient should be positive integers.")
+            elif var_y.ndim == 3:
+                print("One time series with 3 dimensions is regressed on another with the same dimensions.")
+                if lag == 0:
+                    t, y, x  = var_y.shape
+                    slope = np.zeros((y, x), dtype=float)
+                    r_value = np.zeros((y, x), dtype=float)
+                    p_value = np.zeros((y, x), dtype=float)
+                    for i in np.arange(y):
+                        for j in np.arange(x):
+                            slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[:,i,j], var_y[:,i,j])
+                elif type(lag) == int:
+                    t, y, x  = var_y.shape
+                    slope = np.zeros((y, x), dtype=float)
+                    r_value = np.zeros((y, x), dtype=float)
+                    p_value = np.zeros((y, x), dtype=float)
+                    for i in np.arange(y):
+                        for j in np.arange(x):
+                            if lag > 0:
+                                slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[lag:,i,j],
+                                                                                                var_y[:-lag,i,j])
+                            elif lag < 0:
+                                slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[:lag,i,j],
+                                                                                                var_y[-lag:,i,j])
+                else:
+                    IOError("The lead / lag coefficient should be integers.")
             else:
-                raise IOError("The input time series must have dimensions @time,latitude@!")
+                raise IOError("The dimensions of input time series are not supported!")
         elif var_y.ndim == 2 and var_x.ndim == 1:
-            print("A time series is regressed on a 1D field.")
+            print("One time series is regressed on a 1D field.")
             if lag == 0:
                 t, y  = var_y.shape
                 slope = np.zeros(y, dtype=float)
@@ -245,7 +270,7 @@ class operator:
                             slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
                                             var_x[:], var_y[:,j])                
         elif var_y.ndim == 3 and var_x.ndim == 1:
-            print("A time series is regressed on a 2D field.")
+            print("One time series is regressed on a 2D field.")
             if lag == 0:
                 t, y, x  = var_y.shape
                 slope = np.zeros((y, x), dtype=float)
@@ -296,6 +321,11 @@ class operator:
         - MAM March, April, May (spring)
         param Dim_month: A check whether the time series include the dimension of month.
         """
+        # check if the input time is in the pre-defined month list
+        month_list = ['DJF', 'JFM', 'FMA', 'MAM', 'AMJ', 'MJJ',
+                      'JJA', 'JAS', 'ASO', 'SON', 'OND', 'NDJ']
+        if span not in month_list:
+            raise IOError("The input month span does not include 3 contineous calander months!")
         # rearange the input series
         if Dim_month == True:
             if series.ndim == 2:
@@ -321,12 +351,20 @@ class operator:
             month_1 = 10
         elif span == 'SON':
             month_1 = 9
+        elif span == 'ASO':
+            month_1 = 8
+        elif span == 'JAS':
+            month_1 = 7            
         elif span == 'MJJ':
             month_1 = 5
         elif span == 'AMJ':
             month_1 = 4
         elif span == 'MAM':
             month_1 = 3
+        elif span == 'FMA':
+            month_1 = 2
+        elif span == 'JFM':
+            month_1 = 1
         month_2 = month_1 + 1
         month_3 = month_1 + 2
         # now we deal with the exception
