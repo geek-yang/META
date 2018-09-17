@@ -38,6 +38,8 @@ class operator:
         -True (default) input time series have month dimension [year,month,...]
         -False input time series have only 1 dimension for time
         param white_var: time series without seasonal cycling
+        return: time series
+        rtype: numpy.array
         """
         # white refers to the time series without seasonal cycling
         white_var = np.zeros(self.var.shape, dtype=float)
@@ -98,6 +100,8 @@ class operator:
         param obj: objects for detrending, two options available
         -'anomaly' (default) the time series of anomaly will be detrended
         -'original' the original input time series will be detrended
+        return: time series
+        rtype: numpy.array
         """
         if obj == 'anomaly':
             series = self._anomaly
@@ -144,6 +148,8 @@ class operator:
         -'anomaly' (default) apply low pass filter to the time series of anomaly
         -'original' apply lowpass filter to the original input time series
         -'detrend' apply lowpass filter to the detrended time series
+        return: time series
+        rtype: numpy.array
         """
         if obj == 'anomaly':
             series = self._anomaly
@@ -181,6 +187,8 @@ class operator:
         param var_x: input time series, either 1D or 2D
         param var_y: input time series as the regression target, either 1D or 3D
         param lag: time unit for lead / lag regression, lag must be an integer
+        return: matrix of slope, regression coefficient and rate of non-trustworthy
+        rtype: numpy.array
         """
         # check the dimensions of input time series
         if var_x.shape == var_y.shape:
@@ -320,6 +328,8 @@ class operator:
         - AMJ April, May, June 
         - MAM March, April, May (spring)
         param Dim_month: A check whether the time series include the dimension of month.
+        return: time series
+        rtype: numpy.array
         """
         # check if the input time is in the pre-defined month list
         month_list = ['DJF', 'JFM', 'FMA', 'MAM', 'AMJ', 'MJJ',
@@ -418,6 +428,8 @@ class operator:
         param Dim_month: there are two modes for removing the seasonal cycling
         -True (default) input time series have month dimension [year,month,...]
         -False input time series have only 1 dimension for time
+        return: time series
+        rtype: numpy.array
         """
         if series.ndim > 3:
             raise IOError("This module can not work with any array with a \
@@ -441,3 +453,28 @@ class operator:
                     interp_series[i,:] = ius(lat_tar.data)
             
         return interp_series
+    
+    @staticmethod
+    def mca(matrix_x, matrix_y):
+        """
+        Perform Maximum Covariance Analysis (MCA) with given data.
+        The MCA is based on Singular Value Decomposition (SVD).
+        return: eigenvalues and eigenvectors from Singular Value Decomposition.
+        rtype: numpy.array        
+        """
+        print ("The input matrix should only have 3 dimensions including time as the first axis.")
+        if matrix_x.ndim == 3 and matrix_y.ndim == 3:
+            nt_x, nx_x, ny_x = matrix_x.shape
+            nt_y, nx_y, ny_y = matrix_y.shape
+        else:
+            print ("The dimensions of input arrays do not satisfy the requirement!")
+        # reshape the input arrays
+        matrix_x_2D = np.reshape(matrix_x,[nt_x, ny_x*nx_x], order='F')
+        matrix_y_2D = np.reshape(matrix_y,[nt_y, ny_y*nx_y], order='F')
+        # calculate the covariance matrix
+        # time should be the 1st axis!
+        covariance_x_y = np.dot(matrix_x_2D.T, matrix_y_2D) / (nt_x-1)
+        # apply the SVD
+        U, sigma, V = np.linalg.svd(covariance_x_y, full_matrices=False,
+                                    compute_uv = True)
+        

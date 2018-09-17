@@ -121,9 +121,9 @@ class plots:
             verts = np.vstack([np.sin(theta), np.cos(theta)]).T
             circle = mpath.Path(verts * radius + center)
             ax.set_boundary(circle, transform=ax.transAxes)
-            cs = iplt.pcolormesh(cube_iris, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1])
+            cs = iplt.contourf(cube_iris, cmap='coolwarm',levels=ticks, extend='both') #, vmin=ticks[0], vmax=ticks[-1]
             cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                 shrink =0.8, pad=0.05, format="%.1f")
+                                shrink =0.8, pad=0.05, format="%.1f")
             cbar.set_label(label,size = 8)
             cbar.set_ticks(ticks)
             cbar.ax.tick_params(labelsize = 6)
@@ -181,3 +181,4 @@ class plots:
             plt.close(fig)            
         else:
             raise IOError("This module only support fields on geographical or curvilinear grid!")
+            
