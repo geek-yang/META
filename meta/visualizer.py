@@ -49,8 +49,41 @@ class plots:
         fig.savefig(figname,dpi=400)
         plt.close(fig)
         
+    @staticmethod
+    def vertProfile(xaxis, yaxis, corr, p_value, label, ticks, figname='./VerticalProfile'):
+        """
+        This module helps to create a plot to show the vertical profile of fields
+        after regression.
+        
+        param xaxis: latitude for the plot as x axis
+        param yaxis: level for the plot as y axis
+        param corr: the correlation coefficient
+        param figname: name and output path of figure
+        return: Figures
+        rtype: png        
+        """
+        print ("Create contour plot of correlation coefficient for vertical profiles.")
+        # make plots
+        fig = plt.figure(figsize=(6.5,5.4))        
+        cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
+        cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
+                            shrink =0.8, pad=0.135, format="%.1f")
+        cbar.set_label(label,size = 10)
+        cbar.set_ticks(ticks)
+        cbar.ax.tick_params(labelsize = 10)
+        #ii, jj = np.where(p_value<=0.005)
+        #ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
+        #           s=0.1, c='g',alpha=0.3)
+        plt.xlabel("Latitude")
+        plt.ylabel("Level (hPa)")
+        #invert the y axis
+        plt.gca().invert_yaxis()
+        plt.show()
+        fig.savefig(figname,dpi=400)
+        plt.close(fig)
+        
     @staticmethod    
-    def leadlagRegress(yaxis, corr, lag, figname='./LeadLagRegression.png'):
+    def leadlagRegress(yaxis, corr, lag, ticks, figname='./LeadLagRegression.png'):
         """
         This module will make a contour plot to display the correlation coefficient
         got from the lead/lag regression.
@@ -200,7 +233,7 @@ class plots:
                 verts = np.vstack([np.sin(theta), np.cos(theta)]).T
                 circle = mpath.Path(verts * radius + center)
                 ax.set_boundary(circle, transform=ax.transAxes)
-                cs = iplt.pcolormesh(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1])
+                cs = iplt.contourf(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1]) #pcolormesh
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
                                     shrink =0.8, pad=0.05, format="%.1f")
                 cbar.set_label(label,size = 8)
@@ -225,7 +258,7 @@ class plots:
                 gl.yformatter = LATITUDE_FORMATTER
                 gl.xlabel_style = {'size': 11, 'color': 'gray'}
                 gl.ylabel_style = {'size': 11, 'color': 'gray'}
-                cs = iplt.pcolormesh(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1])
+                cs = iplt.contourf(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1])
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
                                     shrink =0.8, pad=0.05, format="%.1f")
                 cbar.set_label(label,size = 8)
