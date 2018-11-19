@@ -181,6 +181,21 @@ class operator:
         return self._lowpass
     
     @staticmethod
+    def autoCorr(series):
+        """
+        Quantify the autocorrelation og given time series.
+        param series: inout time series, should be 1D
+        return: A series of correlation coefficient w.r.t lag time.
+        rtype: numpy.array
+        """
+        # normalize the signal
+        series_norm = np.sum(series**2)
+        # calculate the autocorrelation
+        auto_corr = np.correlate(series, series, 'full') / series_norm
+        # for the return value, we only keep half of them
+        return auto_corr[len(auto_corr)//2:]
+    
+    @staticmethod
     def linearRegress(var_x, var_y, lag=0):
         """
         Linear regression of input time series. Lead/lag regression can also be performed.
@@ -477,4 +492,3 @@ class operator:
         # apply the SVD
         U, sigma, V = np.linalg.svd(covariance_x_y, full_matrices=False,
                                     compute_uv = True)
-        
