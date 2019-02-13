@@ -83,6 +83,78 @@ class plots:
         fig.savefig(figname,dpi=400)
         plt.close(fig)
         
+    @staticmethod
+    def vertProfileSig(xaxis, yaxis, corr, p_value, label,
+                       ticks, figname='./VerticalProfile', ttest=False):
+        """
+        This module helps to create a plot to show the vertical profile of fields
+        after regression. It also includes the full contour of confidence interval.
+        
+        param xaxis: latitude for the plot as x axis
+        param yaxis: level for the plot as y axis
+        param corr: the correlation coefficient
+        param figname: name and output path of figure
+        return: Figures
+        rtype: png        
+        """
+        print ("Create contour plot of correlation coefficient for vertical profiles.")
+        # make plots
+        contour_level = [i for i in np.arange(0,1.1, 0.1)]
+        fig = plt.figure(figsize=(6.5,5.4))        
+        cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
+        cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
+                            shrink =0.8, pad=0.135, format="%.1f")
+        cbar.set_label(label,size = 10)
+        cbar.set_ticks(ticks)
+        cbar.ax.tick_params(labelsize = 10)
+        plt.xlabel("Latitude")
+        plt.ylabel("Level (hPa)")
+        cs = plt.contour(xaxis, yaxis, 1-p_value,
+                         contour_level, colors='k')
+        plt.clabel(cs, inline=1, fontsize=10)
+        #invert the y axis
+        plt.gca().invert_yaxis()
+        plt.show()
+        fig.savefig(figname,dpi=400)
+        plt.close(fig)
+    
+    def vertProfileOverlap(xaxis, yaxis, corr, cont, p_value, label,
+                           ticks, contour_level, inline_space,
+                           figname='./VerticalProfile', ttest=False):
+        """
+        This module helps to create a plot to show the vertical profile of fields
+        after regression. It also includes the full contour of stokes stream function.
+        
+        param xaxis: latitude for the plot as x axis
+        param yaxis: level for the plot as y axis
+        param corr: the correlation coefficient
+        param figname: name and output path of figure
+        return: Figures
+        rtype: png        
+        """
+        print ("Create contour plot of stokes stream function for vertical profiles.")
+        fig = plt.figure(figsize=(6.5,5.4))        
+        cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
+        cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
+                            shrink =0.8, pad=0.135, format="%.1f")
+        cbar.set_label(label,size = 10)
+        cbar.set_ticks(ticks)
+        cbar.ax.tick_params(labelsize = 10)
+        if ttest == True:
+            ii, jj = np.where(p_value<=0.05) # 95% significance
+            plt.plot(xaxis[jj], yaxis[ii], 'go', alpha=0.3)
+        plt.xlabel("Latitude")
+        plt.ylabel("Level (hPa)")
+        contour = plt.contour(xaxis, yaxis, cont,
+                              contour_level, colors='k', linewidths = 0.85, alpha=0.5)
+        plt.clabel(contour, inline=inline_space, fontsize=8, fmt = '%1.1f')        
+        #invert the y axis
+        plt.gca().invert_yaxis()
+        plt.show()
+        fig.savefig(figname,dpi=400)
+        plt.close(fig)        
+        
+        
     @staticmethod    
     def leadlagRegress(yaxis, corr, lag, ticks, figname='./LeadLagRegression.png'):
         """
