@@ -152,11 +152,11 @@ class plots:
         plt.gca().invert_yaxis()
         plt.show()
         fig.savefig(figname,dpi=400)
-        plt.close(fig)        
-        
+        plt.close(fig)
         
     @staticmethod    
-    def leadlagRegress(yaxis, corr, lag, ticks, figname='./LeadLagRegression.png'):
+    def leadlagRegress(yaxis, corr, lag, p_value, figname='./LeadLagRegression.png',
+                       ttest=False):
         """
         This module will make a contour plot to display the correlation coefficient
         got from the lead/lag regression.
@@ -179,6 +179,10 @@ class plots:
         cs = plt.contour(xaxis, yaxis, corr.transpose(),
                          contour_level, colors='k')
         plt.clabel(cs, inline=1, fontsize=10)
+        if ttest == True:
+            ii, jj = np.where(p_value.transpose()<=0.05) # 95% significance
+            plt.scatter(xaxis[jj], yaxis[ii], s=0.8, c='gray', alpha=0.6)
+            #plt.plot(xaxis[jj], yaxis[ii], 'go', s=0.1, alpha=0.3)
         plt.xlabel("Time Lag (year)")
         #lead_year = ['-15','-12','-9','-6','-3','0','3','6','9','12','15']
         plt.ylabel("Latitude")
