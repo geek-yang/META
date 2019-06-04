@@ -46,7 +46,7 @@ class plots:
         #plt.xticks(np.linspace(20, 90, 11))
         plt.ylabel("Correlation Coefficient")
         plt.show()
-        fig.savefig(figname,dpi=400)
+        fig.savefig(figname,dpi=300)
         plt.close(fig)
         
     @staticmethod
@@ -80,7 +80,7 @@ class plots:
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=400)
+        fig.savefig(figname,dpi=300)
         plt.close(fig)
         
     @staticmethod
@@ -115,7 +115,7 @@ class plots:
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=400)
+        fig.savefig(figname,dpi=300)
         plt.close(fig)
     
     def vertProfileOverlap(xaxis, yaxis, corr, cont, p_value, label,
@@ -146,12 +146,12 @@ class plots:
         plt.xlabel("Latitude")
         plt.ylabel("Level (hPa)")
         contour = plt.contour(xaxis, yaxis, cont,
-                              contour_level, colors='k', linewidths = 0.85, alpha=0.5)
+                              contour_level, colors='k', linewidths = 0.9, alpha=0.6)
         plt.clabel(contour, inline=inline_space, fontsize=8, fmt = '%1.1f')        
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=400)
+        fig.savefig(figname,dpi=300)
         plt.close(fig)
         
     @staticmethod    
@@ -187,7 +187,7 @@ class plots:
         #lead_year = ['-15','-12','-9','-6','-3','0','3','6','9','12','15']
         plt.ylabel("Latitude")
         plt.show()
-        fig.savefig(figname,dpi=400)
+        fig.savefig(figname,dpi=300)
         plt.close(fig)
     
     @staticmethod
@@ -228,6 +228,7 @@ class plots:
                 fig = plt.figure()
                 ax = plt.axes(projection=ccrs.NorthPolarStereo())
                 ax.set_extent([-180,180,20,90],ccrs.PlateCarree())
+                #ax.set_extent([-180,180,60,90],ccrs.PlateCarree())
                 ax.set_aspect('1')
                 ax.coastlines()
                 gl = ax.gridlines(linewidth=1, color='gray', alpha=0.5, linestyle='--')
