@@ -208,7 +208,7 @@ class erai:
                         datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
                                                           'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
                         if i == year_start:
-                            datapath_q_last = datapath_T_q
+                            datapath_q_last = datapath_T_q_u_v
                             datapath_lnsp_last = datapath_z_lnsp
                     elif j == 12:
                         datapath_q_last = os.path.join(self.path,'era{}'.format(i),
@@ -220,7 +220,7 @@ class erai:
                         datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
                                                           'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
                         if i == year_end:
-                            datapath_q_next = datapath_T_q
+                            datapath_q_next = datapath_T_q_u_v
                             datapath_lnsp_next = datapath_z_lnsp
                     else:
                         datapath_q_last = os.path.join(self.path,'era{}'.format(i),
@@ -262,7 +262,7 @@ class erai:
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat,
+                                                        len(time), len(level), len(lat), len(lon), lat, lon,
                                                         self.lat_unit, self.out_path)
                     elif method == 'FD':
                         # start the mass correction
@@ -354,7 +354,7 @@ class erai:
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat,
+                                                        len(time), len(level), len(lat), len(lon), lat, lon,
                                                         self.lat_unit, self.out_path)
                     elif method == 'FD':
                         # start the mass correction

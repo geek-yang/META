@@ -249,7 +249,7 @@ class correction_SH:
         return constant
 
     def massCorrect(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                    t, h, y, x, lat, lat_unit, out_path):
+                    t, h, y, x, lat, lon, lat_unit, out_path):
         """
         Perform mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds.
@@ -307,73 +307,34 @@ class correction_SH:
         # calculte the mean moisture flux for a certain month and take the vertical integral
         moisture_flux_u_int = np.sum((u * q * dp_level / constant['g']),1)
         moisture_flux_v_int = np.sum((v * q * dp_level / constant['g']),1)
+        logging.info("The calculation of divergent verically integrated moisture flux is finished!")
+        # calculate surface pressure tendency
+        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (30 * 86400)
+        logging.info("The calculation of surface pressure tendency is finished!")
+        # calculte the mean mass flux for a certain month and take the vertical integral
+        mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
+        mass_flux_v_int = np.sum((v * dp_level / constant['g']),1)
+        # calculate precipitable water
+        precipitable_water_int = np.sum((q * dp_level / constant['g']),1)
+        # calculate zonal & meridional grid size on earth
+        # the earth is taken as a perfect sphere, instead of a ellopsoid
+        #dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / x
+        #dy = np.pi * constant['R'] / lat_unit
+        ########################################################################
+        ##########             output netCDF files for NCL            ##########
+        ########################################################################
+        intermediate_nc = meta.saveNetCDF.savenc()
+        intermediate_nc.ncInter(sp_mean, moisture_tendency, moisture_flux_u_int,
+                                moisture_flux_v_int, sp_tendency, mass_flux_u_int,
+                                mass_flux_v_int, precipitable_water_int, lat, lon,)
         ########################################################################
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
         # call ncl via bash scheduler
         #subprocess.call(['bash','{}/meta/scheduler_SH.sh'.format(package_path),'{}/'.format(out_path)])
         subprocess.call(['bash','./meta/scheduler_SH.sh','{}/'.format(out_path)])
-        #
-
-        # calculate zonal & meridional grid size on earth
-        # the earth is taken as a perfect sphere, instead of a ellopsoid
-        dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / x
-        dy = np.pi * constant['R'] / lat_unit
-
-        # calculate the divergence of moisture flux using NCL
-        # call ncl
-
-        # Pay attention to the coordinate and sign!
-        # zonal moisture flux divergence
-
-
-        logging.info("The calculation of divergent verically integrated moisture flux is finished!")
-        # calculate evaporation minus precipitation
-        E_P = np.zeros((y, x),dtype = float)
-        E_P = moisture_tendency + np.mean(div_moisture_flux_u,0) + np.mean(div_moisture_flux_v,0)
-        logging.info("Computation of E-P on each grid point is finished!")
-        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (30 * 86400)
-        logging.info("The calculation of surface pressure tendency is finished!")
-        # calculte the mean mass flux for a certain month and take the vertical integral
-        mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
-        mass_flux_v_int = np.sum((v * dp_level / constant['g']),1)
-        # calculate the divergence of moisture flux
-        div_mass_flux_u = np.zeros((t,y,x),dtype = float)
-        div_mass_flux_v = np.zeros((t,y,x),dtype = float)
-        # zonal mass flux divergence
-        for i in np.arange(y):
-            for j in np.arange(x):
-                # the longitude could be from 0 to 360 or -180 to 180, but the index remains the same
-                if j == 0:
-                    div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,j+1] - mass_flux_u_int[:,i,-1]) / (2 * dx[i])
-                elif j == (x-1) :
-                    div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,0] - mass_flux_u_int[:,i,j-1]) / (2 * dx[i])
-                else:
-                    div_mass_flux_u[:,i,j] = (mass_flux_u_int[:,i,j+1] - mass_flux_u_int[:,i,j-1]) / (2 * dx[i])
-        # meridional mass flux divergence
-        for i in np.arange(y):
-            if i == 0:
-                div_mass_flux_v[:,i,:] = -(mass_flux_v_int[:,i+1,:] - mass_flux_v_int[:,i,:]) / (2 * dy)
-            elif i == (y-1):
-                div_mass_flux_v[:,i,:] = -(mass_flux_v_int[:,i,:] - mass_flux_v_int[:,i-1,:])/ (2 * dy)
-            else:
-                div_mass_flux_v[:,i,:] = -(mass_flux_v_int[:,i+1,:] - mass_flux_v_int[:,i-1,:]) / (2 * dy)
-        mass_residual = np.zeros((y,x),dtype = float)
-        mass_residual = sp_tendency + constant['g'] * (np.mean(div_mass_flux_u,0) +\
-                        np.mean(div_mass_flux_v,0)) - constant['g'] * E_P
-        logging.info("Computation of mass residual on each grid point is finished!")
-        # calculate precipitable water
-        precipitable_water = q * dp_level / constant['g']
-        # take the vertical integral
-        precipitable_water_int = np.mean(np.sum(precipitable_water,1),0)
-        # calculate barotropic correction wind
-        uc = np.zeros((y,x),dtype = float)
-        vc = np.zeros((y,x),dtype = float)
-        vc = mass_residual * dy / (sp_mean - constant['g'] * precipitable_water_int)
-        vc[0,:] = 0 # Modification at polar points
-        for i in np.arange(y):
-            uc[i,:] = mass_residual[i,:] * dx[i] / (sp_mean[i,:] -
-                      constant['g'] * precipitable_water_int[i,:])
         logging.info("Computation of barotropic correction wind on each grid point is finished!")
+        # load temporary file and get uc and vc
+        temp_uvc =
 
         return uc, vc

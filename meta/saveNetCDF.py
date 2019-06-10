@@ -8,7 +8,7 @@ Last Update     : 2018.08.06
 Contributor     :
 Description     : This module aims to save the output fields into the netCDF files.
                   It outputs netCDF 4 files. The data has been compressed.
-                  
+
 Return Values   : netCDF files
 """
 
@@ -24,13 +24,13 @@ class savenc:
         Save the output fields into netCDF files.
         """
         print ("Save output fields as netCDF4 files.")
-        
+
     def ncCorrect(self, uc, vc, year, lat, lon, path, name='ERAI'):
         """
         Save the baratropic corrected wind into netCDF files.
         param uc: baratropic corrected zonal winds
         param vc: baratropic corrected meridional winds
-        
+
         return: netCDF4 files containing uc and vc on the native grid.
         rtype: netCDF4
         """
@@ -66,7 +66,7 @@ class savenc:
         lon_wrap_var.units = 'degree_east'
         uc_wrap_var.units = 'm/s'
         vc_wrap_var.units = 'm/s'
-        
+
         uc_wrap_var.long_name = 'zonal barotropic correction wind'
         vc_wrap_var.long_name = 'meridional barotropic correction wind'
         # writing data
@@ -79,7 +79,14 @@ class savenc:
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
-    
+
+    def ncInter(self,):
+        """
+        Save the intermediate fields for the computation of mass correction with
+        NCL on spherical harmonics.
+        """
+        
+
     def ncAMET(self, E_0, cpT_0, Lvq_0, gz_0, uv2_0,
                E_200, cpT_200, Lvq_200, gz_200, uv2_200,
                E_500, cpT_500, Lvq_500, gz_500, uv2_500,
@@ -102,7 +109,7 @@ class savenc:
         param cpT_500: internal energy transport upto 500 hPa
         param Lvq_500: latent heat transport over upto 500 hPa
         param gz_500: geopotential energy transport upto 500 hPa
-        param uv2_500: kinetic energy transport upto 500 hPa     
+        param uv2_500: kinetic energy transport upto 500 hPa
         param E_850: total meridional energy transport upto 850 hPa
         param cpT_850: internal energy transport upto 850 hPa
         param Lvq_850: latent heat transport over upto 850 hPa
@@ -113,10 +120,10 @@ class savenc:
         param Lvq_vert: vertical profile of latent heat transport
         param gz_vert: vertical profile of geopotential energy transport
         param uv2_vert: vertical profile of kinetic energy transport
-        
+
         return: netCDF4 files containing AMET and its components on the native grid.
         rtype: netCDF4
-        """   
+        """
         logging.info("Start creating netcdf file for AMET and its components at each grid point.")
         if name == 'ERAI':
             data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{}_amet_point.nc'.format(year)),
@@ -224,7 +231,7 @@ class savenc:
         level_wrap_var[:] = level
         lat_wrap_var[:] = lat
         lon_wrap_var[:] = lon
-        
+
         E_0_wrap_var[:] = E_0
         cpT_0_wrap_var[:] = cpT_0
         Lvq_0_wrap_var[:] = Lvq_0
@@ -253,7 +260,7 @@ class savenc:
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
-    
+
     def ncEddyamet(self):
         """
         Save the eddy components of AMET and its components upto certain levels into netCDF files.
@@ -335,7 +342,7 @@ class savenc:
         lat_wrap_var[:] = gphiv[:,96]
         gphiv_wrap_var[:] = gphiv
         glamv_wrap_var[:] = glamv
-        
+
         E_0_wrap_var[:] = E
         E_100_wrap_var[:] = E_100
         E_300_wrap_var[:] = E_300
@@ -423,7 +430,7 @@ class savenc:
         lat_wrap_var[:] = gphiv[:,96]
         gphit_wrap_var[:] = nav_lat
         glamt_wrap_var[:] = nav_lon
-        
+
         OHC_0_wrap_var[:] = OHC
         OHC_100_wrap_var[:] = OHC_100
         OHC_300_wrap_var[:] = OHC_300
@@ -453,14 +460,14 @@ class savenc:
         Save the eddy components of OMET and its components upto certain levels into netCDF files.
         param E_eddy_steady_mean: energy transport by steady mean flow over the entire depth
         param E_100_eddy_steady_mean: energy transport by steady mean flow from surface to 100m
-        
+
         param name: name of the reanalysis products. There are options
         - ORAS4 (default)
         - GLORYS2V3
         - SODA3
         param temporal: the temporal resolution that the original calculation is based on. Two options below
         - monthly (default)
-        - 5daily        
+        - 5daily
         """
         logging.info("Start creating netcdf file for eddy components at each grid point.")
         if name == 'ORAS4':
@@ -471,7 +478,7 @@ class savenc:
             alias = 'soda'
         else:
             raise IOError("This dataset is not supported in this module.")
-        
+
         data_wrap = Dataset(os.path.join(path,'{}_model_monthly_{}_E_eddy_point.nc'.format(alias, year)),
                             'w',format = 'NETCDF4')
         # create dimensions for netcdf data
@@ -520,7 +527,7 @@ class savenc:
         E_atl_300_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_300_eddy_stationary_mean',np.float32,('month','jj','ji'))
         E_atl_700_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_700_eddy_stationary_mean',np.float32,('month','jj','ji'))
         E_atl_2000_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_2000_eddy_stationary_mean',np.float32,('month','jj','ji'))
-        E_atl_vert_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_vert_eddy_stationary_mean',np.float32,('month','depth','jj'))        
+        E_atl_vert_eddy_stationary_mean_wrap_var = data_wrap.createVariable('E_atl_vert_eddy_stationary_mean',np.float32,('month','depth','jj'))
         # global attributes
         data_wrap.description = 'Monthly mean eddy components of meridional energy transport fields.'
         # variable attributes
@@ -539,7 +546,7 @@ class savenc:
         E_atl_300_eddy_steady_mean_wrap_var.units = 'Tera Joule'
         E_atl_700_eddy_steady_mean_wrap_var.units = 'Tera Joule'
         E_atl_2000_eddy_steady_mean_wrap_var.units = 'Tera Joule'
-        
+
         E_0_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
         E_100_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
         E_300_eddy_stationary_mean_wrap_var.units = 'Tera Joule'
@@ -574,7 +581,7 @@ class savenc:
         E_atl_300_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 300m in the Atlantic'
         E_atl_700_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 700m in the Atlantic'
         E_atl_2000_eddy_steady_mean_wrap_var.long_name = 'Energy transport by steady mean flow from surface to 2000m in the Atlantic'
-        
+
         E_0_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow over the entire depth'
         E_100_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 100m'
         E_300_eddy_stationary_mean_wrap_var.long_name = 'Energy transport by stationary mean flow from surface to 300m'
@@ -599,7 +606,7 @@ class savenc:
         lat_wrap_var[:] = gphiv[:,96]
         gphiv_wrap_var[:] = gphiv
         glamv_wrap_var[:] = glamv
-        
+
         E_0_eddy_steady_mean_wrap_var[:] = E_eddy_steady_mean
         E_100_eddy_steady_mean_wrap_var[:] = E_100_eddy_steady_mean
         E_300_eddy_steady_mean_wrap_var[:] = E_300_eddy_steady_mean
@@ -615,7 +622,7 @@ class savenc:
         E_atl_300_eddy_steady_mean_wrap_var[:] = E_atl_300_eddy_steady_mean
         E_atl_700_eddy_steady_mean_wrap_var[:] = E_atl_700_eddy_steady_mean
         E_atl_2000_eddy_steady_mean_wrap_var[:] = E_atl_2000_eddy_steady_mean
-        
+
         E_0_eddy_stationary_mean_wrap_var[:] = E_eddy_stationary_mean
         E_100_eddy_stationary_mean_wrap_var[:] = E_100_eddy_stationary_mean
         E_300_eddy_stationary_mean_wrap_var[:] = E_300_eddy_stationary_mean
@@ -637,4 +644,3 @@ class savenc:
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
-        
