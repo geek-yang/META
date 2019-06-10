@@ -4,23 +4,23 @@ Copyright Netherlands eScience Center
 Function        : Extract Meteorological fields from ERA-Interim
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.08.03
-Last Update     : 2018.08.07
+Last Update     : 2019.06.09
 Contributor     :
 Description     : This module aims to load fields from the standard netCDF files
                   downloaded directly from online data system of ECMWF. It provides an
                   entrance for the following computation includes the mass budget
                   correction, quantification of meridional energy transport, decomposition
                   of eddies.
-                  
+
                   ERA-Interim is a state-of-the-art atmosphere reanalysis product produced
                   by ECMWF. It spans from 1979 to 2017. Natively it is generated on a hybrid
                   sigma grid with a horizontal resolution of 0.75 x 0.75 deg and 60 vertical
                   levels.
-                  
+
                   The processing unit is monthly data, for the sake of memory saving.
-                  
+
 Return Values   : netCDF files
-Caveat!         : This module is designed to work with a batch of files. Hence, there is 
+Caveat!         : This module is designed to work with a batch of files. Hence, there is
                   pre-requists for the location and arrangement of data. The folder should
                   have the following structure:
                   /ERAI
@@ -31,9 +31,9 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                           ...
                           /model_daily_075_1979_12_T_q.nc
                           ...
-                          
+
                   Please name the files as shown in the folder tree after downloading from MARS.
-                  It is recommended to combine two variables in a single file (e.g. T_q includse 
+                  It is recommended to combine two variables in a single file (e.g. T_q includse
                   temperature and specific humidity), as it can save downloading time by reducing
                   the times of requests.
                   In addition, for general cases, the module can work with files containing only 1
@@ -68,38 +68,32 @@ import meta.saveNetCDF
 #import matplotlib.pyplot as plt
 
 class erai:
-    def __init__(self, path, out_path):
+    def __init__(self, path, out_path, package_path):
         """
         Initialize the extraction of fields from ERA-Interim.
-        
+
         The data is on hybrid sigma levels. As the interpolation can introduce
         large errors to the computation of energy transport, we will follow the
         model level. The determination of levels is based on the estimation of
         pressure on each level with standard surface pressure 1013.25 hPa
         (see ERA-Interim archive by ECMWF.).
-        
+
         param path: the root path of the input fields
         param out_path: the location of output files
         param lat_unit: number of grid boxes meridionally (to calculate the unit width)
-        param p_200: index of sigma level upto 200hPa
-        param p_500: index of sigma level upto 500hPa
-        param p_850: index of sigma level upto 850hPa
         """
         self.path = path
         self.out_path = out_path
         # 0.75 deg per grid box latitudinally
         self.lat_unit = 240
-        # number of levels for certain pressure
-        self.p_200 = 29
-        self.p_500 = 38
-        self.p_850 = 48
-    
+        #self.package_path = package_path
+
     @staticmethod
     def defineSigmaLevels():
         """
         Definine sigma levels. For more information, please visit the website of ECMWF.
         Since there are 60 model levels, there are 61 half levels, so it is for A and B values.
-        
+
         returns: tuple containing arrays with A and B values for the definition of
                  sigma levellist
         rtype: tuple
@@ -134,9 +128,9 @@ class erai:
             8.4737491608e-001, 8.7965691090e-001, 9.0788388252e-001, 9.3194031715e-001, 9.5182150602e-001,
             9.6764522791e-001, 9.7966271639e-001, 9.8827010393e-001, 9.9401944876e-001, 9.9763011932e-001,
             1.0000000000e+000,],dtype=float)
-        
+
         return (A, B)
-    
+
     @staticmethod
     def setConstants():
         '''
@@ -147,7 +141,7 @@ class erai:
         const Lv: Latent heat of vaporization [J/Kg]
         const R_dry: gas constant of dry air [J/(kg*K)]
         const R_vap: gas constant for water vapour [J/(kg*K)]
-        
+
         returns: dictionary with constants for g, R. cp, Lv, R_dry and R_vap
         rtype: dict
         '''
@@ -159,18 +153,21 @@ class erai:
                     'R_dry' : 286.9,    # gas constant of dry air [J/(kg*K)]
                     'R_vap' : 461.5,    # gas constant for water vapour [J/(kg*K)]
                    }
-        
+
         return constant
-    
-    def massCorrect(self, year_start, year_end, example, fields=2):
+
+    def massCorrect(self, year_start, year_end, example, fields=1, method='SH'):
         """
         Mass budget correction.
         param year_start: the starting time for the calculation
         param year_end: the ending time for the calculation
-        param fields: number of fields contained in one file, two options available
-        - 1 each file contains only 1 field
-        - 2 (default) each file contains 2 fields
         param example: an example input file for loading dimensions (lat, lon)
+        param fields: number of fields contained in one file, two options available
+        - 1 (default) two seperate files with T,q,u,v on multiple sigma levels and lnsp,z on surface
+        - 2 three seperate files, T,q and u,v and lnsp,z
+        param method: numerical methods for mass correction
+        - FD Calculate divergence/inverse Laplacian/gradient through finite difference
+        - SH (default) Calculate divergence/inverse Laplacian/gradient through spherical harmonics
         """
         # set up logging files to monitor the calculation
         logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget.log') ,
@@ -192,7 +189,95 @@ class erai:
         uc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of divergent corrected winds
-        if fields == 2:
+        if fields == 1:
+            for i in year:
+                for j in month:
+                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
+                    datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
+                                                    'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
+                                                   'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    # extract fields for the calculation of tendency terms
+                    if j == 1:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i-1, 12))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i-1, 12))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        if i == year_start:
+                            datapath_q_last = datapath_T_q
+                            datapath_lnsp_last = datapath_z_lnsp
+                    elif j == 12:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i+1, 1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
+                        if i == year_end:
+                            datapath_q_next = datapath_T_q
+                            datapath_lnsp_next = datapath_z_lnsp
+                    else:
+                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
+                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
+                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                    # get all the variables for the mass budget correction
+                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
+                    z_lnsp_key = Dataset(datapath_z_lnsp)
+                    # get the variable keys for the calculation of tendency during mass budget correction
+                    q_last_key = Dataset(datapath_q_last)
+                    q_next_key = Dataset(datapath_q_next)
+                    lnsp_last_key = Dataset(datapath_lnsp_last)
+                    lnsp_next_key = Dataset(datapath_lnsp_next)
+                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    # extract variables
+                    q = T_q_u_v_key.variables['q'][:]
+                    lnsp = z_lnsp_key.variables['lnsp'][:]
+                    u = T_q_u_v_key.variables['u'][:]
+                    v = T_q_u_v_key.variables['v'][:]
+                    # get time dimension
+                    time = T_q_u_v_key.variables['time'][:]
+                    # extract variables for the calculation of tendency
+                    q_last = q_last_key.variables['q'][-1,:,:,:]
+                    q_next = q_next_key.variables['q'][0,:,:,:]
+                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,:,:]
+                    lnsp_next = lnsp_next_key.variables['lnsp'][0,:,:]
+                    # calculate sp
+                    sp = np.exp(lnsp)
+                    sp_last = np.exp(lnsp_last)
+                    sp_next = np.exp(lnsp_next)
+                    del lnsp, lnsp_last, lnsp_next
+                    logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
+                    if method == 'SH':
+                        # start the mass correction
+                        SinkSource = meta.massBudget.correction_SH()
+                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                                        len(time), len(level), len(lat), len(lon), lat,
+                                                        self.lat_unit, self.out_path)
+                    elif method == 'FD':
+                        # start the mass correction
+                        SinkSource = meta.massBudget.correction_FD()
+                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                    else:
+                        IOError("Please follow the naming rule as described in the documentation!")
+                    # save the output to the data pool
+                    uc_pool[i-year_start,j-1,:,:] = uc
+                    vc_pool[i-year_start,j-1,:,:] = vc
+            # export output as netCDF files
+            packing = meta.saveNetCDF.savenc()
+            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
+        elif fields == 2:
             for i in year:
                 for j in month:
                     logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
@@ -264,32 +349,40 @@ class erai:
                     sp_next = np.exp(lnsp_next)
                     del lnsp, lnsp_last, lnsp_next
                     logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
-                    # start the mass correction
-                    SinkSource = meta.massBudget.correction()
-                    uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                   len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                    # choose the methods for mass correction
+                    if method == 'SH':
+                        # start the mass correction
+                        SinkSource = meta.massBudget.correction_SH()
+                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                                        len(time), len(level), len(lat), len(lon), lat,
+                                                        self.lat_unit, self.out_path)
+                    elif method == 'FD':
+                        # start the mass correction
+                        SinkSource = meta.massBudget.correction_FD()
+                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                                        len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                    else:
+                        IOError("Please follow the naming rule as described in the documentation!")
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
             # export output as netCDF files
             packing = meta.saveNetCDF.savenc()
             packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
-        elif fields == 1:
-            print ("This function will be added soon")
         else:
             IOError("Please follow the naming rule as described in the documentation!")
-    
+
     def amet(self, year_start, year_end, path_uvc, fields=2):
         """
         Quantify Meridional Energy Transport.
         param year_start: the starting time for the calculation
         param year_end: the ending time for the calculation
         param path_uvc: location of the baratropic corrected winds
-        param fields: number of fields contained in one file, two options available 
+        param fields: number of fields contained in one file, two options available
         - 1 each file contains only 1 field
         - 2 (default) each file contains 2 fields
         param example: an example input file for loading dimensions (level)
-        
+
         return: arrays containing AMET and its components upto differnt pressure levels
         rtype: netCDF4
         """
@@ -317,29 +410,11 @@ class erai:
         # from surface to a certain height (hPa)
         # the results will be saved per year to save memory
         # AMET in the entire column
-        E_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        cpT_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        Lvq_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        gz_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        uv2_0 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        # AMET upto 200hPA
-        E_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        cpT_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        Lvq_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        gz_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        uv2_200 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        # AMET upto 500hPA
-        E_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        cpT_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        Lvq_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        gz_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        uv2_500 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        # AMET upto 850hPA
-        E_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        cpT_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        Lvq_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        gz_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        uv2_850 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        E = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # AMET vertical profile following the sigma level
         E_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
         cpT_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
@@ -401,7 +476,7 @@ class erai:
             print ("This function will be added soon")
         else:
             IOError("Please follow the naming rule as described in the documentation!")
-        
+
     def eddies(self, year_start, year_end):
         """
         Decompose eddy components for the AMET.
@@ -422,12 +497,12 @@ class erai:
         lat = example_key.variables['latitude'][:]
         lon = example_key.variables['longitude'][:]
         level = example_key.variables['level'][:]
-        
+
     def calc_gz(self, T, q, sp, z, A, B, t, h, y, x):
         """
         Calculate geopotential on sigma levels.
         The method is given in ECMWF IFS 9220, from section 2.20 - 2.23.
-        
+
         param T: Absolute Temperature  [K]
         param q: Specific Humidity     [kg/kg]
         param sp: Surface Pressure     [Pa]
@@ -438,7 +513,7 @@ class erai:
         param h: level dimension of input fields
         param y: latitude dimension of input fields
         param x: longitude dimension of input fields
-        
+
         return: An array of geopotential.
         rtype: numpy array
         """
@@ -487,5 +562,5 @@ class erai:
             # see equation 2.20 in ECMWF IFS 9220
             gz_half = gz_half + ln_p * constant['R_dry'] * Tv[:,i_inverse,:,:]
         logging.info("Computation of geopotential on model level is finished!")
-        
+
         return gz
