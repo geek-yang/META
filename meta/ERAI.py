@@ -168,6 +168,7 @@ class erai:
         param method: numerical methods for mass correction
         - FD Calculate divergence/inverse Laplacian/gradient through finite difference
         - SH (default) Calculate divergence/inverse Laplacian/gradient through spherical harmonics
+        Caveat! In order to make use of NCL, all the input fields should have ascending lat.
         """
         # set up logging files to monitor the calculation
         logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget.log') ,
@@ -182,7 +183,7 @@ class erai:
         # use example input file to load the basic dimensions information
         example_key = Dataset(example)
         #time = example_key['time'][:]
-        lat = example_key.variables['latitude'][:]
+        lat = example_key.variables['latitude'][::-1]
         lon = example_key.variables['longitude'][:]
         level = example_key.variables['level'][:]
         # create space for the output
@@ -241,17 +242,17 @@ class erai:
                     lnsp_next_key = Dataset(datapath_lnsp_next)
                     logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
                     # extract variables
-                    q = T_q_u_v_key.variables['q'][:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:]
-                    u = T_q_u_v_key.variables['u'][:]
-                    v = T_q_u_v_key.variables['v'][:]
+                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
+                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
+                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
+                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
                     # get time dimension
                     time = T_q_u_v_key.variables['time'][:]
                     # extract variables for the calculation of tendency
-                    q_last = q_last_key.variables['q'][-1,:,:,:]
-                    q_next = q_next_key.variables['q'][0,:,:,:]
-                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,:,:]
-                    lnsp_next = lnsp_next_key.variables['lnsp'][0,:,:]
+                    q_last = q_last_key.variables['q'][-1,:,::-1,:]
+                    q_next = q_next_key.variables['q'][0,:,::-1,:]
+                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,::-1,:]
+                    lnsp_next = lnsp_next_key.variables['lnsp'][0,::-1,:]
                     # calculate sp
                     sp = np.exp(lnsp)
                     sp_last = np.exp(lnsp_last)
@@ -372,15 +373,15 @@ class erai:
         else:
             IOError("Please follow the naming rule as described in the documentation!")
 
-    def amet(self, year_start, year_end, path_uvc, fields=2):
+    def amet(self, year_start, year_end, path_uvc, fields=1):
         """
         Quantify Meridional Energy Transport.
         param year_start: the starting time for the calculation
         param year_end: the ending time for the calculation
         param path_uvc: location of the baratropic corrected winds
         param fields: number of fields contained in one file, two options available
-        - 1 each file contains only 1 field
-        - 2 (default) each file contains 2 fields
+        - 1 (default) two seperate files with T,q,u,v on multiple sigma levels and lnsp,z on surface
+        - 2 three seperate files, T,q and u,v and lnsp,z
         param example: an example input file for loading dimensions (level)
 
         return: arrays containing AMET and its components upto differnt pressure levels
@@ -415,14 +416,49 @@ class erai:
         Lvq = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         gz = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         uv2 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
-        # AMET vertical profile following the sigma level
-        E_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
-        cpT_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
-        Lvq_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
-        gz_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
-        uv2_vert = np.zeros((len(month),len(level),len(lat)), dtype=float)
         # loop for the computation of AMET
-        if fields == 2:
+        if fields == 1:
+            for i in year:
+                for j in month:
+                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
+                    datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
+                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    # get all the variables for the mass budget correction
+                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
+                    z_lnsp_key = Dataset(datapath_z_lnsp)
+                    logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
+                    # extract variables
+                    T = T_q_u_v_key.variables['t'][:,:,::-1,:]
+                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
+                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
+                    z = z_lnsp_key.variables['z'][:,::-1,:]
+                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
+                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
+                    # get time dimension
+                    time = T_q_u_v_key.variables['time'][:]
+                    #level = T_q_key.variables['level'][:]
+                    # calculate sp
+                    sp = np.exp(lnsp)
+                    # calculate geopotential
+                    print ('Calculate geopotential on each model level.')
+                    gz = self.calc_gz(T, q, sp, z, A, B, len(time),
+                                      len(level), len(lat), len(lon))
+                    logging.info("Extracting variables successfully!")
+                    AMET = meta.amet.met()
+                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
+                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],
+                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz[:,::-1,:],
+                                                                  A, B, len(time), len(level),
+                                                                  len(lat), len(lon), lat,
+                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
+                # save output as netCDF files
+                packing = meta.saveNetCDF.savenc()
+                packing.ncAMET(E, cpT, Lvq, gz, uv2,
+                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
+                               i, level, lat, lon, self.out_path)
+        elif fields == 2:
             for i in year:
                 for j in month:
                     logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
@@ -455,25 +491,15 @@ class erai:
                                       len(level), len(lat), len(lon))
                     logging.info("Extracting variables successfully!")
                     AMET = meta.amet.met()
-                    E_0[j-1,:,:], cpT_0[j-1,:,:], Lvq_0[j-1,:,:], gz_0[j-1,:,:], uv2_0[j-1,:,:],\
-                    E_200[j-1,:,:], cpT_200[j-1,:,:], Lvq_200[j-1,:,:], gz_200[j-1,:,:], uv2_200[j-1,:,:],\
-                    E_500[j-1,:,:], cpT_500[j-1,:,:], Lvq_500[j-1,:,:], gz_500[j-1,:,:], uv2_500[j-1,:,:],\
-                    E_850[j-1,:,:], cpT_850[j-1,:,:], Lvq_850[j-1,:,:], gz_850[j-1,:,:], uv2_850[j-1,:,:],\
+                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:], uv2[j-1,:,:],\
                     E_vert[j-1,:,:], cpT_vert[j-1,:,:], Lvq_vert[j-1,:,:], gz_vert[j-1,:,:], \
                     uv2_vert[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz, A, B, len(time),
                                              len(level), len(lat), len(lon), lat,
-                                             self.lat_unit, vc[i-year_start,j-1,:,:]
-                                             self.p_200, self.p_500, self.p_850)
+                                             self.lat_unit, vc[i-year_start,j-1,:,:])
                 # save output as netCDF files
                 packing = meta.saveNetCDF.savenc()
-                packing.ncAMET(E_0, cpT_0, Lvq_0, gz_0, uv2_0,
-                               E_200, cpT_200, Lvq_200, gz_200, uv2_200,
-                               E_500, cpT_500, Lvq_500, gz_500, uv2_500,
-                               E_850, cpT_850, Lvq_850, gz_850, uv2_850,
-                               E_vert, cpT_vert, Lvq_vert, gz_vert, uv2_vert,
+                packing.ncAMET(E, cpT, Lvq, gz, uv2,
                                i, level, lat, lon, self.out_path)
-        elif fields == 1:
-            print ("This function will be added soon")
         else:
             IOError("Please follow the naming rule as described in the documentation!")
 

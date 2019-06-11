@@ -14,6 +14,8 @@
 #                  memory requirement for 64GB.
 # parse argument from python
 out_path=$1
+#year=$2
+#month=$3
 # setup the environment for ncl script
 export path=${out_path}
 # call ncl function

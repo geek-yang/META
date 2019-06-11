@@ -315,7 +315,7 @@ class correction_SH:
         mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
         mass_flux_v_int = np.sum((v * dp_level / constant['g']),1)
         # calculate precipitable water
-        precipitable_water_int = np.sum((q * dp_level / constant['g']),1)
+        precipitable_water_int = np.mean(np.sum((q * dp_level / constant['g']),1),0)
         # calculate zonal & meridional grid size on earth
         # the earth is taken as a perfect sphere, instead of a ellopsoid
         #dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / x
@@ -324,9 +324,9 @@ class correction_SH:
         ##########             output netCDF files for NCL            ##########
         ########################################################################
         intermediate_nc = meta.saveNetCDF.savenc()
-        intermediate_nc.ncInter(sp_mean, moisture_tendency, moisture_flux_u_int,
-                                moisture_flux_v_int, sp_tendency, mass_flux_u_int,
-                                mass_flux_v_int, precipitable_water_int, lat, lon,)
+        intermediate_nc.ncInterCorrect(sp_mean, moisture_tendency, moisture_flux_u_int,
+                                       moisture_flux_v_int, sp_tendency, mass_flux_u_int,
+                                       mass_flux_v_int, precipitable_water_int, t, lat, lon, out_path)
         ########################################################################
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
@@ -335,6 +335,9 @@ class correction_SH:
         subprocess.call(['bash','./meta/scheduler_SH.sh','{}/'.format(out_path)])
         logging.info("Computation of barotropic correction wind on each grid point is finished!")
         # load temporary file and get uc and vc
-        temp_uvc =
+        datapath_temp_uvc = os.path.join(out_path,'temp_uvc.nc')
+        temp_uvc_key = Dataset(datapath_temp_uvc)
+        uc = temp_uvc_key.variables['uc'][:]
+        vc = temp_uvc_key.variables['vc'][:]
 
         return uc, vc

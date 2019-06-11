@@ -80,46 +80,102 @@ class savenc:
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")
 
-    def ncInter(self,):
+    def ncInterCorrect(self, sp_mean, moisture_tendency, moisture_flux_u,
+                       moisture_flux_v, sp_tendency, mass_flux_u, mass_flux_v,
+                       precipitable_water, time, lat, lon, out_path):
         """
         Save the intermediate fields for the computation of mass correction with
         NCL on spherical harmonics.
+        Caveat! This module is specifically designed for using NCL
+        param sp_mean: monthly mean surface pressure
+        param moisture_tendency: moisture tendency
+        param moisture_flux_u: vertically integrated zonal moisture flux
+        param moisture_flux_v: vertically integrated meridional moisture flux
+        param sp_tendency: surface pressure tendency
+        param mass_flux_u: vertically integrated zonal mass flux
+        param mass_flux_v: vertically integrated meridional moisture flux
+        param precipitable_water: precipitable water
         """
-        
+        logging.info("Start creating intermediate netcdf file for mass budget correction with NCL.")
+        data_wrap = Dataset(os.path.join(out_path, 'mass_correct_tend_flux.nc')),
+                            'w',format = 'NETCDF4')
+        # create dimensions for netcdf data
+        time_wrap_dim = data_wrap.createDimension('time',time)
+        lat_wrap_dim = data_wrap.createDimension('latitude',len(lat))
+        lon_wrap_dim = data_wrap.createDimension('longitude',len(lon))
+        # create 1-dimension variables
+        time_wrap_var = data_wrap.createVariable('time',np.int32,('time',))
+        lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
+        lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
+        # create 3-dimension variables
+        moisture_flux_u_wrap_var = data_wrap.createVariable('moisture_flux_u',np.float32,('time','latitude','longitude'))
+        moisture_flux_v_wrap_var = data_wrap.createVariable('moisture_flux_v',np.float32,('time','latitude','longitude'))
+        mass_flux_u_wrap_var = data_wrap.createVariable('mass_flux_u',np.float32,('time','latitude','longitude'))
+        mass_flux_v_wrap_var = data_wrap.createVariable('mass_flux_v',np.float32,('time','latitude','longitude'))
+        # create 2-dimension variables
+        sp_mean_wrap_var = data_wrap.createVariable('sp_mean',np.float32,('latitude','longitude'))
+        moisture_tendency_wrap_var = data_wrap.createVariable('moisture_tendency',np.float32,('latitude','longitude'))
+        sp_tendency_wrap_var = data_wrap.createVariable('sp_tendency',np.float32,('latitude','longitude'))
+        precipitable_water_wrap_var = data_wrap.createVariable('precipitable_water',np.float32,('latitude','longitude'))
+        # global attributes
+        data_wrap.description = 'Vertical integrated variables and tendency terms for mass correction.'
+        # variable attributes
+        time_wrap_var.units = 'time'
+        lat_wrap_var.units = 'degree_north'
+        lon_wrap_var.units = 'degree_east'
+        moisture_flux_u_wrap_var.units = 'kg/s'
+        moisture_flux_v_wrap_var.units = 'kg/s'
+        mass_flux_u_wrap_var.units = 'kg/s'
+        mass_flux_v_wrap_var.units = 'kg/s'
+        sp_mean_wrap_var.units = 'Pa'
+        moisture_tendency_wrap_var.units = 'kg/s'
+        sp_tendency_wrap_var.units = 'kg/s'
+        precipitable_water_wrap_var.units = 'kg/m'
 
-    def ncAMET(self, E_0, cpT_0, Lvq_0, gz_0, uv2_0,
-               E_200, cpT_200, Lvq_200, gz_200, uv2_200,
-               E_500, cpT_500, Lvq_500, gz_500, uv2_500,
-               E_850, cpT_850, Lvq_850, gz_850, uv2_850,
-               E_vert, cpT_vert, Lvq_vert, gz_vert, uv2_vert,
+        time_wrap_var.long_name = 'time'
+        lat_wrap_var.long_name = 'latitude'
+        lon_wrap_var.long_name = 'longitude'
+        moisture_flux_u_wrap_var.long_name = 'vertically integrated zonal moisture flux'
+        moisture_flux_v_wrap_var.long_name = 'vertically integrated meridional moisture flux'
+        mass_flux_u_wrap_var.long_name = 'vertically integrated zonal mass flux'
+        mass_flux_v_wrap_var.long_name = 'vertically integrated meridional mass flux'
+        sp_mean_wrap_var.long_name = 'monthly mean surface pressure'
+        moisture_tendency_wrap_var.long_name = 'moisture tendency'
+        sp_tendency_wrap_var.long_name = 'surface pressure tendency'
+        precipitable_water_wrap_var.long_name = 'precipitable water'
+        # writing data
+        time_wrap_var[:] = np.arange(1, time+1, 1)
+        month_wrap_var[:] = np.arange(1,13,1)
+        lat_wrap_var[:] = lat
+        lon_wrap_var[:] = lon
+        moisture_flux_u_wrap_var[:] = moisture_flux_u
+        moisture_flux_v_wrap_var[:] = moisture_flux_v
+        mass_flux_x_wrap_var[:] = mass_flux_u
+        mass_flux_v_wrap_var[:] = mass_flux_v
+        sp_mean_wrap_var[:] = sp_mean
+        moisture_tendency_var[:] = moisture_tendency
+        sp_tendency_wrap_var[:] = sp_tendency
+        precipitable_water_wrap_var[:] = precipitable_water
+        # close the file
+        data_wrap.close()
+        logging.info("Create netcdf files successfully!!")
+
+
+    def ncAMET(self, E, cpT, Lvq, gz, uv2,
+               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
                year, level, lat, lon, path, name='ERAI'):
         """
         Save the AMET and its components upto certain levels into netCDF files.
-        param E_0: total meridional energy transport over the entire column
-        param cpT_0: internal energy transport over the entire column
-        param Lvq_0: latent heat transport over the entire column
-        param gz_0: geopotential energy transport over the entire column
-        param uv2_0: kinetic energy transport over the entire column
-        param E_200: total meridional energy transport upto 200 hPa
-        param cpT_200: internal energy transport upto 200 hPa
-        param Lvq_200: latent heat transport over upto 200 hPa
-        param gz_200: geopotential energy transport upto 200 hPa
-        param uv2_200: kinetic energy transport upto 200 hPa
-        param E_500: total meridional energy transport upto 500 hPa
-        param cpT_500: internal energy transport upto 500 hPa
-        param Lvq_500: latent heat transport over upto 500 hPa
-        param gz_500: geopotential energy transport upto 500 hPa
-        param uv2_500: kinetic energy transport upto 500 hPa
-        param E_850: total meridional energy transport upto 850 hPa
-        param cpT_850: internal energy transport upto 850 hPa
-        param Lvq_850: latent heat transport over upto 850 hPa
-        param gz_850: geopotential energy transport upto 850 hPa
-        param uv2_850: kinetic energy transport upto 850 hPa
-        param E_vert: vertical profile of total meridional energy transport
-        param cpT_vert: vertical profile of internal energy transport
-        param Lvq_vert: vertical profile of latent heat transport
-        param gz_vert: vertical profile of geopotential energy transport
-        param uv2_vert: vertical profile of kinetic energy transport
+        param E: total meridional energy transport over the entire column
+        param cpT: internal energy transport over the entire column
+        param Lvq: latent heat transport over the entire column
+        param gz: geopotential energy transport over the entire column
+        param uv2: kinetic energy transport over the entire column
+        param E_c: vertical profile of total meridional energy transport correction
+        param cpT_c: vertical profile of internal energy transport correction
+        param Lvq_c: vertical profile of latent heat transport correction
+        param gz_c: vertical profile of geopotential energy transport correction
+        param uv2_c: vertical profile of kinetic energy transport correction
 
         return: netCDF4 files containing AMET and its components on the native grid.
         rtype: netCDF4
@@ -147,116 +203,59 @@ class savenc:
         lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
         lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
         # create 3-dimension variables
-        E_0_wrap_var = data_wrap.createVariable('E_total',np.float32,('month','latitude','longitude'))
-        cpT_0_wrap_var = data_wrap.createVariable('cpT_total',np.float32,('month','latitude','longitude'))
-        Lvq_0_wrap_var = data_wrap.createVariable('Lvq_total',np.float32,('month','latitude','longitude'))
-        gz_0_wrap_var = data_wrap.createVariable('gz_total',np.float32,('month','latitude','longitude'))
-        uv2_0_wrap_var = data_wrap.createVariable('uv2_total',np.float32,('month','latitude','longitude'))
-        E_200_wrap_var = data_wrap.createVariable('E_200',np.float32,('month','latitude','longitude'))
-        cpT_200_wrap_var = data_wrap.createVariable('cpT_200',np.float32,('month','latitude','longitude'))
-        Lvq_200_wrap_var = data_wrap.createVariable('Lvq_200',np.float32,('month','latitude','longitude'))
-        gz_200_wrap_var = data_wrap.createVariable('gz_200',np.float32,('month','latitude','longitude'))
-        uv2_200_wrap_var = data_wrap.createVariable('uv2_200',np.float32,('month','latitude','longitude'))
-        E_500_wrap_var = data_wrap.createVariable('E_500',np.float32,('month','latitude','longitude'))
-        cpT_500_wrap_var = data_wrap.createVariable('cpT_500',np.float32,('month','latitude','longitude'))
-        Lvq_500_wrap_var = data_wrap.createVariable('Lvq_500',np.float32,('month','latitude','longitude'))
-        gz_500_wrap_var = data_wrap.createVariable('gz_500',np.float32,('month','latitude','longitude'))
-        uv2_500_wrap_var = data_wrap.createVariable('uv2_500',np.float32,('month','latitude','longitude'))
-        E_850_wrap_var = data_wrap.createVariable('E_850',np.float32,('month','latitude','longitude'))
-        cpT_850_wrap_var = data_wrap.createVariable('cpT_850',np.float32,('month','latitude','longitude'))
-        Lvq_850_wrap_var = data_wrap.createVariable('Lvq_850',np.float32,('month','latitude','longitude'))
-        gz_850_wrap_var = data_wrap.createVariable('gz_850',np.float32,('month','latitude','longitude'))
-        uv2_850_wrap_var = data_wrap.createVariable('uv2_850',np.float32,('month','latitude','longitude'))
-        E_vert_wrap_var = data_wrap.createVariable('E_vert',np.float32,('month','level','latitude'))
-        cpT_vert_wrap_var = data_wrap.createVariable('cpT_vert',np.float32,('month','level','latitude'))
-        Lvq_vert_wrap_var = data_wrap.createVariable('Lvq_vert',np.float32,('month','level','latitude'))
-        gz_vert_wrap_var = data_wrap.createVariable('gz_vert',np.float32,('month','level','latitude'))
-        uv2_vert_wrap_var = data_wrap.createVariable('uv2_vert',np.float32,('month','level','latitude'))
+        E_wrap_var = data_wrap.createVariable('E',np.float32,('month','latitude','longitude'))
+        cpT_wrap_var = data_wrap.createVariable('cpT',np.float32,('month','latitude','longitude'))
+        Lvq_wrap_var = data_wrap.createVariable('Lvq',np.float32,('month','latitude','longitude'))
+        gz_wrap_var = data_wrap.createVariable('gz',np.float32,('month','latitude','longitude'))
+        uv2_wrap_var = data_wrap.createVariable('uv2',np.float32,('month','latitude','longitude'))
+        E_c_wrap_var = data_wrap.createVariable('E_c',np.float32,('month','level','latitude'))
+        cpT_c_wrap_var = data_wrap.createVariable('cpT_c',np.float32,('month','level','latitude'))
+        Lvq_c_wrap_var = data_wrap.createVariable('Lvq_c',np.float32,('month','level','latitude'))
+        gz_c_wrap_var = data_wrap.createVariable('gz_c',np.float32,('month','level','latitude'))
+        uv2_c_wrap_var = data_wrap.createVariable('uv2_c',np.float32,('month','level','latitude'))
         # global attributes
         data_wrap.description = 'Monthly mean meridional energy transport fields.'
         # variable attributes
-        E_0_wrap_var.units = 'Tera Watt'
-        cpT_0_wrap_var.units = 'Tera Watt'
-        Lvq_0_wrap_var.units = 'Tera Watt'
-        gz_0_wrap_var.units = 'Tera Watt'
-        uv2_0_wrap_var.units = 'Tera Watt'
-        E_200_wrap_var.units = 'Tera Watt'
-        cpT_200_wrap_var.units = 'Tera Watt'
-        Lvq_200_wrap_var.units = 'Tera Watt'
-        gz_200_wrap_var.units = 'Tera Watt'
-        uv2_200_wrap_var.units = 'Tera Watt'
-        E_500_wrap_var.units = 'Tera Watt'
-        cpT_500_wrap_var.units = 'Tera Watt'
-        Lvq_500_wrap_var.units = 'Tera Watt'
-        gz_500_wrap_var.units = 'Tera Watt'
-        uv2_500_wrap_var.units = 'Tera Watt'
-        E_850_wrap_var.units = 'Tera Watt'
-        cpT_850_wrap_var.units = 'Tera Watt'
-        Lvq_850_wrap_var.units = 'Tera Watt'
-        gz_850_wrap_var.units = 'Tera Watt'
-        uv2_850_wrap_var.units = 'Tera Watt'
-        E_vert_wrap_var.units = 'Tera Watt'
-        cpT_vert_wrap_var.units = 'Tera Watt'
-        Lvq_vert_wrap_var.units = 'Tera Watt'
-        gz_vert_wrap_var.units = 'Tera Watt'
-        uv2_vert_wrap_var.units = 'Tera Watt'
+        E_wrap_var.units = 'Tera Watt'
+        cpT_wrap_var.units = 'Tera Watt'
+        Lvq_wrap_var.units = 'Tera Watt'
+        gz_wrap_var.units = 'Tera Watt'
+        uv2_wrap_var.units = 'Tera Watt'
 
-        E_0_wrap_var.long_name = 'total meridional energy transport over the entire column'
-        cpT_0_wrap_var.long_name = 'meridional internal energy transport over the entire column'
-        Lvq_0_wrap_var.long_name = 'meridional latent heat transport over the entire column'
-        gz_0_wrap_var.long_name = 'meridional geopotential energy transport over the entire column'
-        uv2_0_wrap_var.long_name = 'meridional kinetic energy transport over the entire column'
-        E_200_wrap_var.long_name = 'total meridional energy transport from surface to 200hPa'
-        cpT_200_wrap_var.long_name = 'meridional internal energy transport from surface 200hPa'
-        Lvq_200_wrap_var.long_name = 'meridional latent heat transport from surface 200hPa'
-        gz_200_wrap_var.long_name = 'meridional geopotential energy transport from surface 200hPa'
-        uv2_200_wrap_var.long_name = 'meridional kinetic energy transport from surface 200hPa'
-        E_500_wrap_var.long_name = 'total meridional energy transport from surface to 500hPa'
-        cpT_500_wrap_var.long_name = 'meridional internal energy transport from surface 500hPa'
-        Lvq_500_wrap_var.long_name = 'meridional latent heat transport from surface 500hPa'
-        gz_500_wrap_var.long_name = 'meridional geopotential energy transport from surface 500hPa'
-        uv2_500_wrap_var.long_name = 'meridional kinetic energy transport from surface 500hPa'
-        E_850_wrap_var.long_name = 'total meridional energy transport from surface to 850hPa'
-        cpT_850_wrap_var.long_name = 'meridional internal energy transport from surface 850hPa'
-        Lvq_850_wrap_var.long_name = 'meridional latent heat transport from surface 850hPa'
-        gz_850_wrap_var.long_name = 'meridional geopotential energy transport from surface 850hPa'
-        uv2_850_wrap_var.long_name = 'meridional kinetic energy transport from surface 850hPa'
-        E_vert_wrap_var.long_name = 'vertical profile of total meridional energy transport'
-        cpT_vert_wrap_var.long_name = 'vertical profile of internal energy transport'
-        Lvq_vert_wrap_var.long_name = 'vertical profile of latent heat transport'
-        gz_vert_wrap_var.long_name = 'vertical profile of geopotential energy transport'
-        uv2_vert_wrap_var.long_name = 'vertical profile of kinetic energy transport'
+        E_c_wrap_var.units = 'Tera Watt'
+        cpT_c_wrap_var.units = 'Tera Watt'
+        Lvq_c_wrap_var.units = 'Tera Watt'
+        gz_c_wrap_var.units = 'Tera Watt'
+        uv2_c_wrap_var.units = 'Tera Watt'
+
+        E_wrap_var.long_name = 'total meridional energy transport over the entire column'
+        cpT_wrap_var.long_name = 'meridional internal energy transport over the entire column'
+        Lvq_wrap_var.long_name = 'meridional latent heat transport over the entire column'
+        gz_wrap_var.long_name = 'meridional geopotential energy transport over the entire column'
+        uv2_wrap_var.long_name = 'meridional kinetic energy transport over the entire column'
+
+        E_c_wrap_var.long_name = 'vertical profile of total meridional energy transport correction'
+        cpT_c_wrap_var.long_name = 'vertical profile of internal energy transport correction'
+        Lvq_c_wrap_var.long_name = 'vertical profile of latent heat transport correction'
+        gz_c_wrap_var.long_name = 'vertical profile of geopotential energy transport correction'
+        uv2_c_wrap_var.long_name = 'vertical profile of kinetic energy transport correction'
         # writing data
         month_wrap_var[:] = np.arange(1,13,1)
         level_wrap_var[:] = level
         lat_wrap_var[:] = lat
         lon_wrap_var[:] = lon
 
-        E_0_wrap_var[:] = E_0
-        cpT_0_wrap_var[:] = cpT_0
-        Lvq_0_wrap_var[:] = Lvq_0
-        gz_0_wrap_var[:] = gz_0
-        uv2_0_wrap_var[:] = uv2_0
-        E_200_wrap_var[:] = E_200
-        cpT_200_wrap_var[:] = cpT_200
-        Lvq_200_wrap_var[:] = Lvq_200
-        gz_200_wrap_var[:] = gz_200
-        uv2_200_wrap_var[:] = uv2_200
-        E_500_wrap_var[:] = E_500
-        cpT_500_wrap_var[:] = cpT_500
-        Lvq_500_wrap_var[:] = Lvq_500
-        gz_500_wrap_var[:] = gz_500
-        uv2_500_wrap_var[:] = uv2_500
-        E_850_wrap_var[:] = E_850
-        cpT_850_wrap_var[:] = cpT_850
-        Lvq_850_wrap_var[:] = Lvq_850
-        gz_850_wrap_var[:] = gz_850
-        uv2_850_wrap_var[:] = uv2_850
-        E_vert_wrap_var[:] = E_vert
-        cpT_vert_wrap_var[:] = cpT_vert
-        Lvq_vert_wrap_var[:] = Lvq_vert
-        gz_vert_wrap_var[:] = gz_vert
-        uv2_vert_wrap_var[:] = uv2_vert
+        E_wrap_var[:] = E
+        cpT_wrap_var[:] = cpT
+        Lvq_wrap_var[:] = Lvq
+        gz_wrap_var[:] = gz
+        uv2_wrap_var[:] = uv2
+
+        E_c_wrap_var[:] = E_c
+        cpT_c_wrap_var[:] = cpT_c
+        Lvq_c_wrap_var[:] = Lvq_c
+        gz_c_wrap_var[:] = gz_c
+        uv2_c_wrap_var[:] = uv2_c
         # close the file
         data_wrap.close()
         logging.info("Create netcdf files successfully!!")

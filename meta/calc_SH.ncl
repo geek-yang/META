@@ -26,8 +26,14 @@ filename = "mass_correct_tend_flux.nc"
 ; load file
 f = addfile(dir + filename,"r")
 ; extract each variable
-moisture_flux_u = f-> moisture_flux_u_int
-moisture_flux_v = f-> moisture_flux_v_int
+moisture_flux_u = f-> moisture_flux_u
+moisture_flux_v = f-> moisture_flux_v
+mass_flux_u = f-> mass_flux_u
+mass_flux_v = f-> mass_flux_v
+sp_mean = f-> sp_mean
+moisture_tendency = f-> moisture_tendency
+sp_tendency = f-> sp_tendency
+precipitable_water = f-> precipitable_water
 time = f->time
 lat = f->latitude
 lon = f->longitude
@@ -55,6 +61,74 @@ gradsf(X, grad_uc, grad_vc)
 ; calculate barotropic winds
 uc = grad_uc / (sp_mean - g * precipitable_water_int)
 vc = grad_vc / (sp_mean - g * precipitable_water_int)
-; save netCDF file
-https://www.ncl.ucar.edu/Applications/method_2.shtml
-https://www.ncl.ucar.edu/Applications/write_netcdf.shtml
+; ##################################################################
+; ############            create netCDF files           ############
+; ##################################################################
+; save netCDF file with NCL
+;https://www.ncl.ucar.edu/Applications/method_2.shtml
+;https://www.ncl.ucar.edu/Applications/write_netcdf.shtml
+;===================================================================
+; Assume variables exist and that they have associated meta data:
+; (a) coordinate variables time, lev, lat, lon and (b) attributes
+;===================================================================
+nlat  = dimsizes(lat)
+nlon  = dimsizes(lon)
+diro = dir                       ; Output directory
+filo = "temp_uvc.nc"             ; Output file
+system("/bin/rm -f " + diro + filo) ; remove if exists
+fout  = addfile (diro + filo, "c")  ; open output file
+;===================================================================
+; explicitly declare file definition mode. Improve efficiency.
+;===================================================================
+setfileoption(fout,"DefineMode",True)
+;===================================================================
+; predefine the coordinate variables and their dimensionality
+; Note: to get an UNLIMITED record dimension, we set the dimensionality
+; to -1 (or the actual size) and set the dimension name to True.
+;===================================================================
+dimNames = (/"lat", "lon"/)
+dimSizes = (/nlat,  nlon/)
+dimUnlim = (/False, False/)
+filedimdef(fout,dimNames,dimSizes,dimUnlim)
+;===================================================================
+; predefine the the dimensionality of the variables to be written out
+;===================================================================
+; Here we are using NCL functions to facilitate defining
+; each variable's dimension name(s) and type.
+; The following could be replaced with explicit, user defined dimension
+; names different from those associated with the variable in memory.
+; Say, PS(time,lat,lon) in the NCL script. They could be redefined for the file via:
+; filevardef(fout, "PS"   ,typeof(PS) ,(/"TIME","latitude","longitude"/))
+;===================================================================
+filevardef(fout, "lat"  ,typeof(lat), (/"latitude"/))
+filevardef(fout, "lon"  ,typeof(lon), (/"longitude"/))
+filevardef(fout, "uc"   ,typeof(uc) , (/"latitude","longitude"/))
+filevardef(fout, "vc"   ,typeof(vc) , (/"latitude","longitude"/))
+;===================================================================
+; Copy attributes associated with each variable to the file
+; All attributes associated with each variable will be copied.
+;====================================================================
+;lat@long_name = "Latitude"
+;lon@long_name = "Longitude"
+;uc@long_name = "zonal correct barotropic wind"
+;vc@long_name = "meridional correct barotropic wind"
+;lat@unit = "degree north"
+;lon@unit = "degree east"
+;@unit = "m/s"
+;vc@unit = "m/s"
+;filevarattdef(fout,"lat",lat)   ; copy lat attributes
+;filevarattdef(fout,"lon",lon)   ; copy lon attributes
+;===================================================================
+; explicitly exit file definition mode. **NOT REQUIRED**
+;===================================================================
+setfileoption(fout,"DefineMode",False)
+;===================================================================
+; output only the data values since the dimensionality and such have
+; been predefined. The "(/", "/)" syntax tells NCL to only output the
+; data values to the predefined locations on the file.
+;====================================================================
+fout->lat    = (/lat/)
+fout->lon    = (/lon/)
+fout->uc     = (/uc/)
+fout->vc     = (/vc/)
+print("Successfully create netCDF file for barotropic correction winds!")
