@@ -2,7 +2,7 @@
 ; Function        :  Computation operatior via spherical harmonics
 ; Author          : Yang Liu (y.liu@esciencecenter.nl)
 ; First Built     : 2019.06.10
-; Last Update     : 2019.06.10
+; Last Update     : 2019.06.11
 ; Description     : This module uses NCL to calculate divergence, inverse Laplacian,
 ;                   and gradients on spectral domain with spherical harmonics.
 ;
@@ -22,7 +22,7 @@ g = 9.80616
 ; get environment variable from bash
 dir = getenv("path")
 ; get file name
-filename = "mass_correct_tend_flux.nc"
+filename = "mass_correct_temp_flux.nc"
 ; load file
 f = addfile(dir + filename,"r")
 ; extract each variable

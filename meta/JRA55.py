@@ -68,7 +68,7 @@ import meta.saveNetCDF
 #import matplotlib.pyplot as plt
 
 class erai:
-    def __init__(self, path, out_path, package_path):
+    def __init__(self, path, out_path):
         """
         Initialize the extraction of fields from ERA-Interim.
 
@@ -86,7 +86,7 @@ class erai:
         self.out_path = out_path
         # 0.75 deg per grid box latitudinally
         self.lat_unit = 240
-        self.package_path = package_path
+        #self.package_path = package_path
 
     @staticmethod
     def defineSigmaLevels():
@@ -264,7 +264,7 @@ class erai:
                         SinkSource = meta.massBudget.correction_SH()
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                         len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path, self.package_path)
+                                                        self.lat_unit, self.out_path)
                     elif method == 'FD':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_FD()

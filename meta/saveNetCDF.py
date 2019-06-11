@@ -97,7 +97,7 @@ class savenc:
         param precipitable_water: precipitable water
         """
         logging.info("Start creating intermediate netcdf file for mass budget correction with NCL.")
-        data_wrap = Dataset(os.path.join(out_path, 'mass_correct_tend_flux.nc')),
+        data_wrap = Dataset(os.path.join(out_path, 'mass_correct_temp_flux.nc')),
                             'w',format = 'NETCDF4')
         # create dimensions for netcdf data
         time_wrap_dim = data_wrap.createDimension('time',time)

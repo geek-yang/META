@@ -249,7 +249,7 @@ class correction_SH:
         return constant
 
     def massCorrect(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                    t, h, y, x, lat, lon, lat_unit, out_path):
+                    t, h, y, x, lat, lon, lat_unit, out_path, package_path):
         """
         Perform mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds.
@@ -331,8 +331,7 @@ class correction_SH:
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
         # call ncl via bash scheduler
-        #subprocess.call(['bash','{}/meta/scheduler_SH.sh'.format(package_path),'{}/'.format(out_path)])
-        subprocess.call(['bash','./meta/scheduler_SH.sh','{}/'.format(out_path)])
+        subprocess.call(['bash','{}/meta/scheduler_SH.sh'.format(package_path),'{}/'.format(out_path)])
         logging.info("Computation of barotropic correction wind on each grid point is finished!")
         # load temporary file and get uc and vc
         datapath_temp_uvc = os.path.join(out_path,'temp_uvc.nc')

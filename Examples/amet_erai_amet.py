@@ -23,9 +23,9 @@ if __name__=="__main__":
     datapath_ERAI = "/project/Reanalysis/ERA_Interim/Subdaily/Model"
     #output_path = "/home/yang/workbench/test"
     output_path = "/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/meta_out/met"
-    #package_path = '/home/yang/NLeSC/Computation_Modeling/Bjerknes/Scripts/META"
+    package_path = "/home/yang/NLeSC/Computation_Modeling/Bjerknes/Scripts/META"
     #example = '/home/yang/workbench/test/era1991/model_daily_075_1991_4_T_q.nc"
-    example = "/project/Reanalysis/ERA_Interim/Subdaily/Model/era1991/model_daily_075_1991_4_T_q.nc"
+    example = "/project/Reanalysis/ERA_Interim/Subdaily/Model/era1991/model_daily_075_1991_4_T_q_u_v.nc"
     #uvc_path = "/home/yang/workbench/test/model_subdaily_075_1991_1991_uvc_point.nc'
     uvc_path = "/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/model_daily_075_1979_2016_E_point.nc"
     #####################################################################################
