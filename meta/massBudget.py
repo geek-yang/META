@@ -35,6 +35,8 @@ import platform
 import sys
 import logging
 import subprocess
+sys.path.append("../")
+import meta
 #import matplotlib
 # generate images without having a window appear
 #matplotlib.use('Agg')
@@ -331,7 +333,8 @@ class correction_SH:
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
         # call ncl via bash scheduler
-        subprocess.call(['bash','{}/meta/scheduler_SH.sh'.format(package_path),'{}/'.format(out_path)])
+        subprocess.call(['bash','{0}/meta/scheduler_SH.sh'.format(package_path),'{0}/'.format(out_path),
+                         '{0}/'.format(package_path)])
         logging.info("Computation of barotropic correction wind on each grid point is finished!")
         # load temporary file and get uc and vc
         datapath_temp_uvc = os.path.join(out_path,'temp_uvc.nc')

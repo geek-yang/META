@@ -36,13 +36,13 @@ class savenc:
         """
         logging.info("Start creating netcdf file for baratropic corrected wind fields at each grid point.")
         if name == 'ERAI':
-            data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),
+            data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{0}_{1}_uvc_point.nc'.format(year[0],year[-1])),
                                 'w',format = 'NETCDF4')
         elif name == 'MERRA2':
-            data_wrap = Dataset(os.path.join(path, 'merra_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),
+            data_wrap = Dataset(os.path.join(path, 'merra_model_subdaily_{0}_{1}_uvc_point.nc'.format(year[0],year[-1])),
                                 'w',format = 'NETCDF4')
         elif name == 'JRA55':
-            data_wrap = Dataset(os.path.join(path, 'jra_model_subdaily_{}_{}_uvc_point.nc'.format(year[0],year[-1])),
+            data_wrap = Dataset(os.path.join(path, 'jra_model_subdaily_{0}_{1}_uvc_point.nc'.format(year[0],year[-1])),
                                 'w',format = 'NETCDF4')
         else:
             raise IOError("This dataset is not supported in this module.")
@@ -97,7 +97,7 @@ class savenc:
         param precipitable_water: precipitable water
         """
         logging.info("Start creating intermediate netcdf file for mass budget correction with NCL.")
-        data_wrap = Dataset(os.path.join(out_path, 'mass_correct_temp_flux.nc')),
+        data_wrap = Dataset(os.path.join(out_path, 'mass_correct_temp_flux.nc'),
                             'w',format = 'NETCDF4')
         # create dimensions for netcdf data
         time_wrap_dim = data_wrap.createDimension('time',time)
@@ -145,15 +145,14 @@ class savenc:
         precipitable_water_wrap_var.long_name = 'precipitable water'
         # writing data
         time_wrap_var[:] = np.arange(1, time+1, 1)
-        month_wrap_var[:] = np.arange(1,13,1)
         lat_wrap_var[:] = lat
         lon_wrap_var[:] = lon
         moisture_flux_u_wrap_var[:] = moisture_flux_u
         moisture_flux_v_wrap_var[:] = moisture_flux_v
-        mass_flux_x_wrap_var[:] = mass_flux_u
+        mass_flux_u_wrap_var[:] = mass_flux_u
         mass_flux_v_wrap_var[:] = mass_flux_v
         sp_mean_wrap_var[:] = sp_mean
-        moisture_tendency_var[:] = moisture_tendency
+        moisture_tendency_wrap_var[:] = moisture_tendency
         sp_tendency_wrap_var[:] = sp_tendency
         precipitable_water_wrap_var[:] = precipitable_water
         # close the file
@@ -182,13 +181,13 @@ class savenc:
         """
         logging.info("Start creating netcdf file for AMET and its components at each grid point.")
         if name == 'ERAI':
-            data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{}_amet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'era_model_subdaily_{0}_amet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         elif name == 'MERRA2':
-            data_wrap = Dataset(os.path.join(path, 'merra_model_subdaily_{}_amet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'merra_model_subdaily_{0}_amet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         elif name == 'JRA55':
-            data_wrap = Dataset(os.path.join(path, 'jra_model_subdaily_{}_amet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'jra_model_subdaily_{0}_amet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         else:
             raise IOError("This dataset is not supported in this module.")
@@ -208,11 +207,11 @@ class savenc:
         Lvq_wrap_var = data_wrap.createVariable('Lvq',np.float32,('month','latitude','longitude'))
         gz_wrap_var = data_wrap.createVariable('gz',np.float32,('month','latitude','longitude'))
         uv2_wrap_var = data_wrap.createVariable('uv2',np.float32,('month','latitude','longitude'))
-        E_c_wrap_var = data_wrap.createVariable('E_c',np.float32,('month','level','latitude'))
-        cpT_c_wrap_var = data_wrap.createVariable('cpT_c',np.float32,('month','level','latitude'))
-        Lvq_c_wrap_var = data_wrap.createVariable('Lvq_c',np.float32,('month','level','latitude'))
-        gz_c_wrap_var = data_wrap.createVariable('gz_c',np.float32,('month','level','latitude'))
-        uv2_c_wrap_var = data_wrap.createVariable('uv2_c',np.float32,('month','level','latitude'))
+        E_c_wrap_var = data_wrap.createVariable('E_c',np.float32,('month','latitude','longitude'))
+        cpT_c_wrap_var = data_wrap.createVariable('cpT_c',np.float32,('month','latitude','longitude'))
+        Lvq_c_wrap_var = data_wrap.createVariable('Lvq_c',np.float32,('month','latitude','longitude'))
+        gz_c_wrap_var = data_wrap.createVariable('gz_c',np.float32,('month','latitude','longitude'))
+        uv2_c_wrap_var = data_wrap.createVariable('uv2_c',np.float32,('month','latitude','longitude'))
         # global attributes
         data_wrap.description = 'Monthly mean meridional energy transport fields.'
         # variable attributes
@@ -234,11 +233,11 @@ class savenc:
         gz_wrap_var.long_name = 'meridional geopotential energy transport over the entire column'
         uv2_wrap_var.long_name = 'meridional kinetic energy transport over the entire column'
 
-        E_c_wrap_var.long_name = 'vertical profile of total meridional energy transport correction'
-        cpT_c_wrap_var.long_name = 'vertical profile of internal energy transport correction'
-        Lvq_c_wrap_var.long_name = 'vertical profile of latent heat transport correction'
-        gz_c_wrap_var.long_name = 'vertical profile of geopotential energy transport correction'
-        uv2_c_wrap_var.long_name = 'vertical profile of kinetic energy transport correction'
+        E_c_wrap_var.long_name = 'total meridional energy transport correction'
+        cpT_c_wrap_var.long_name = 'internal energy transport correction'
+        Lvq_c_wrap_var.long_name = 'latent heat transport correction'
+        gz_c_wrap_var.long_name = 'geopotential energy transport correction'
+        uv2_c_wrap_var.long_name = 'kinetic energy transport correction'
         # writing data
         month_wrap_var[:] = np.arange(1,13,1)
         level_wrap_var[:] = level
@@ -284,13 +283,13 @@ class savenc:
         """
         logging.info("Start creating netcdf file for OMET at each grid point.")
         if name == 'ORAS4':
-            data_wrap = Dataset(os.path.join(path, 'oras_model_monthly_{}_omet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'oras_model_monthly_{0}_omet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         elif name == 'GLOTYS2V3':
-            data_wrap = Dataset(os.path.join(path, 'glorys_model_monthly_{}_omet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'glorys_model_monthly_{0}_omet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         elif name == 'SODA3':
-            data_wrap = Dataset(os.path.join(path, 'soda_model_5daily_{}_omet_point.nc'.format(year)),
+            data_wrap = Dataset(os.path.join(path, 'soda_model_5daily_{0}_omet_point.nc'.format(year)),
                                 'w',format = 'NETCDF4')
         else:
             raise IOError("This dataset is not supported in this module.")
@@ -478,7 +477,7 @@ class savenc:
         else:
             raise IOError("This dataset is not supported in this module.")
 
-        data_wrap = Dataset(os.path.join(path,'{}_model_monthly_{}_E_eddy_point.nc'.format(alias, year)),
+        data_wrap = Dataset(os.path.join(path,'{0}_model_monthly_{1}_E_eddy_point.nc'.format(alias, year)),
                             'w',format = 'NETCDF4')
         # create dimensions for netcdf data
         month_wrap_dim = data_wrap.createDimension('month',12)

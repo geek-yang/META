@@ -14,12 +14,14 @@
 #                  memory requirement for 64GB.
 # parse argument from python
 out_path=$1
+package_path=$2
 #year=$2
 #month=$3
 # setup the environment for ncl script
 export path=${out_path}
 # call ncl function
-ncl calc_SH.ncl
+script_ncl=${package_path}"meta/calc_SH.ncl"
+ncl -Q -n ${script_ncl}
 # delete the temporary file
-file_path="${out_path}mass_correct_temp_flux.nc"
+file_path=${out_path}"mass_correct_temp_flux.nc"
 rm ${file_path}

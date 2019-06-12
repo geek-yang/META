@@ -26,14 +26,14 @@ filename = "mass_correct_temp_flux.nc"
 ; load file
 f = addfile(dir + filename,"r")
 ; extract each variable
-moisture_flux_u = f-> moisture_flux_u
-moisture_flux_v = f-> moisture_flux_v
-mass_flux_u = f-> mass_flux_u
-mass_flux_v = f-> mass_flux_v
-sp_mean = f-> sp_mean
-moisture_tendency = f-> moisture_tendency
-sp_tendency = f-> sp_tendency
-precipitable_water = f-> precipitable_water
+moisture_flux_u = f->moisture_flux_u
+moisture_flux_v = f->moisture_flux_v
+mass_flux_u = f->mass_flux_u
+mass_flux_v = f->mass_flux_v
+sp_mean = f->sp_mean
+moisture_tendency = f->moisture_tendency
+sp_tendency = f->sp_tendency
+precipitable_water = f->precipitable_water
 time = f->time
 lat = f->latitude
 lon = f->longitude
@@ -59,8 +59,8 @@ grad_vc = X
 ; compute gradient arrays
 gradsf(X, grad_uc, grad_vc)
 ; calculate barotropic winds
-uc = grad_uc / (sp_mean - g * precipitable_water_int)
-vc = grad_vc / (sp_mean - g * precipitable_water_int)
+uc = grad_uc / (sp_mean - g * precipitable_water)
+vc = grad_vc / (sp_mean - g * precipitable_water)
 ; ##################################################################
 ; ############            create netCDF files           ############
 ; ##################################################################
@@ -100,10 +100,10 @@ filedimdef(fout,dimNames,dimSizes,dimUnlim)
 ; Say, PS(time,lat,lon) in the NCL script. They could be redefined for the file via:
 ; filevardef(fout, "PS"   ,typeof(PS) ,(/"TIME","latitude","longitude"/))
 ;===================================================================
-filevardef(fout, "lat"  ,typeof(lat), (/"latitude"/))
-filevardef(fout, "lon"  ,typeof(lon), (/"longitude"/))
-filevardef(fout, "uc"   ,typeof(uc) , (/"latitude","longitude"/))
-filevardef(fout, "vc"   ,typeof(vc) , (/"latitude","longitude"/))
+filevardef(fout, "lat"  ,typeof(lat), (/"lat"/))
+filevardef(fout, "lon"  ,typeof(lon), (/"lon"/))
+filevardef(fout, "uc"   ,typeof(uc) , (/"lat","lon"/))
+filevardef(fout, "vc"   ,typeof(vc) , (/"lat","lon"/))
 ;===================================================================
 ; Copy attributes associated with each variable to the file
 ; All attributes associated with each variable will be copied.

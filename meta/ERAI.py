@@ -33,11 +33,12 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                           ...
 
                   Please name the files as shown in the folder tree after downloading from MARS.
-                  It is recommended to combine two variables in a single file (e.g. T_q includse
-                  temperature and specific humidity), as it can save downloading time by reducing
-                  the times of requests.
-                  In addition, for general cases, the module can work with files containing only 1
-                  field, too. This function will be added soon.
+                  It is recommended to combine two surface variables in a single file (e.g.
+                  model_daily_075_{}_{}_z_lnsp.nc includes surface pressure and surface geopotential)
+                  and combine four 3D variables in a single file (e.g. model_daily_075_{}_{}_T_q_u_v.nc
+                  includes air temperature, specific humidity, zonal and meridional wind), as it can save
+                  downloading time by reducing the times of requests. It can also work with files containing
+                  two variables (e.g. model_daily_075_{}_{}_T_q includes temperature and specific humidity).
 """
 
 ##########################################################################
@@ -74,9 +75,10 @@ class erai:
 
         The data is on hybrid sigma levels. As the interpolation can introduce
         large errors to the computation of energy transport, we will follow the
-        model level. The determination of levels is based on the estimation of
+        model level. The determination of reference levels is based on the estimation of
         pressure on each level with standard surface pressure 1013.25 hPa
-        (see ERA-Interim archive by ECMWF.).
+        (see ERA-Interim archive by ECMWF.). For the actual calculation, the varying
+        surface pressure should be taken into account.
 
         param path: the root path of the input fields
         param out_path: the location of output files
@@ -193,21 +195,21 @@ class erai:
         if fields == 1:
             for i in year:
                 for j in month:
-                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
                     datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
-                                                    'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j))
+                                                    'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j))
                     datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
-                                                   'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                                                   'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
                     # extract fields for the calculation of tendency terms
                     if j == 1:
                         datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i-1, 12))
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i-1, 12))
                         datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j+1))
                         datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i-1, 12))
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i-1, 12))
                         datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
                         if i == year_start:
                             datapath_q_last = datapath_T_q_u_v
                             datapath_lnsp_last = datapath_z_lnsp
@@ -224,14 +226,14 @@ class erai:
                             datapath_q_next = datapath_T_q_u_v
                             datapath_lnsp_next = datapath_z_lnsp
                     else:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
                     # get all the variables for the mass budget correction
                     T_q_u_v_key = Dataset(datapath_T_q_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)
@@ -240,7 +242,7 @@ class erai:
                     q_next_key = Dataset(datapath_q_next)
                     lnsp_last_key = Dataset(datapath_lnsp_last)
                     lnsp_next_key = Dataset(datapath_lnsp_next)
-                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Get the key of all the required variables for {0}(y)-{1}(m)".format(i, j))
                     # extract variables
                     q = T_q_u_v_key.variables['q'][:,:,::-1,:]
                     lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
@@ -258,7 +260,7 @@ class erai:
                     sp_last = np.exp(lnsp_last)
                     sp_next = np.exp(lnsp_next)
                     del lnsp, lnsp_last, lnsp_next
-                    logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
+                    logging.info("Extract all the required variables for {0}(y)-{1}(m) successfully!".format(i, j))
                     if method == 'SH':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
@@ -281,47 +283,47 @@ class erai:
         elif fields == 2:
             for i in year:
                 for j in month:
-                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
-                    datapath_T_q = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_T_q.nc'.format(i, j))
-                    datapath_u_v = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
+                    datapath_T_q = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_T_q.nc'.format(i, j))
+                    datapath_u_v = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
                     # extract fields for the calculation of tendency terms
                     if j == 1:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i-1, 12))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i-1, 12))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i-1),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i-1, 12))
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i-1),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i-1, 12))
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
                         if i == year_start:
                             datapath_q_last = datapath_T_q
                             datapath_lnsp_last = datapath_z_lnsp
                     elif j == 12:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i+1, 1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i+1),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i+1, 1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i+1),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i+1, 1))
                         if i == year_end:
                             datapath_q_next = datapath_T_q
                             datapath_lnsp_next = datapath_z_lnsp
                     else:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q.nc'.format(i, j+1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
                     # get all the variables for the mass budget correction
                     T_q_key = Dataset(datapath_T_q)
                     u_v_key = Dataset(datapath_u_v)
@@ -331,7 +333,7 @@ class erai:
                     q_next_key = Dataset(datapath_q_next)
                     lnsp_last_key = Dataset(datapath_lnsp_last)
                     lnsp_next_key = Dataset(datapath_lnsp_next)
-                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Get the key of all the required variables for {0}(y)-{1}(m)".format(i, j))
                     # extract variables
                     q = T_q_key.variables['q'][:]
                     lnsp = z_lnsp_key.variables['lnsp'][:]
@@ -349,14 +351,14 @@ class erai:
                     sp_last = np.exp(lnsp_last)
                     sp_next = np.exp(lnsp_next)
                     del lnsp, lnsp_last, lnsp_next
-                    logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
+                    logging.info("Extract all the required variables for {0}(y)-{1}(m) successfully!".format(i, j))
                     # choose the methods for mass correction
                     if method == 'SH':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                         len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path)
+                                                        self.lat_unit, self.out_path, self.package_path)
                     elif method == 'FD':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_FD()
@@ -403,7 +405,7 @@ class erai:
         lon = uvc_key['longitude'][:]
         #uc = uvc_key['uc'][:]
         vc = uvc_key['vc'][:]
-        # calculate the levels based on A & B and standard surface pressure
+        # calculate the reference levels based on A & B and standard surface pressure
         half_level = A + B * 101325
         level = (half_level[1:] + half_level[:-1]) / 2
         # create space for the output
@@ -420,15 +422,15 @@ class erai:
         if fields == 1:
             for i in year:
                 for j in month:
-                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
-                    datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
+                    datapath_T_q_u_v = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
                     # get all the variables for the mass budget correction
                     T_q_u_v_key = Dataset(datapath_T_q_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)
-                    logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Get the keys of all the required variables for {0}(y)-{1}(m)".format(i, j))
                     # extract variables
                     T = T_q_u_v_key.variables['t'][:,:,::-1,:]
                     q = T_q_u_v_key.variables['q'][:,:,::-1,:]
@@ -461,18 +463,18 @@ class erai:
         elif fields == 2:
             for i in year:
                 for j in month:
-                    logging.info("Start retrieving variables for {}(y)-{}(m)".format(i, j))
-                    datapath_T_q = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_T_q.nc'.format(i, j))
-                    datapath_u_v = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
-                                                'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j))
+                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
+                    datapath_T_q = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_T_q.nc'.format(i, j))
+                    datapath_u_v = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_u_v.nc'.format(i, j))
+                    datapath_z_lnsp = os.path.join(self.path,'era{0}'.format(i),
+                                                'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
                     # get all the variables for the mass budget correction
                     T_q_key = Dataset(datapath_T_q)
                     u_v_key = Dataset(datapath_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)
-                    logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
+                    logging.info("Get the keys of all the required variables for {0}(y)-{1}(m)".format(i, j))
                     # extract variables
                     T = T_q_key.variables['t'][:]
                     q = T_q_key.variables['q'][:]
