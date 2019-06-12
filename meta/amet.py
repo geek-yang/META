@@ -93,42 +93,33 @@ class met:
         for i in np.arange(h):
             dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
         # calculate each component of total energy and take the vertical integral
-        # include mass correction component
-        # increase the dimension of baratropic corrected winds to speed up
-        # the calculation
-        #vc_3D = np.repeat(vc[np.newaxis,:,:],t,0)
-        #vc_4D = np.repeat(vc_3D[np.newaxis,:,:,:],t,0)
         # Internal Energy cpT
-        internal_flux = constant['cp'] * (1-q) *v * T * dp_level / constant['g']
-        internal_flux_int = np.mean(np.sum(internal_flux,1),0)
-        del internal_flux
-        internal_flux_correct = constant['cp'] * (1-q) * T * dp_level / constant['g']
-        internal_flux_int_correct = np.mean(np.sum(internal_flux_correct,1),0) * vc
-        del internal_flux_correct, T
+        internal_energy = constant['cp'] * (1-q) * T * dp_level / constant['g']
+        del T
+        internal_flux_int = np.mean(np.sum(internal_energy * v,1),0)
+        internal_flux_int_correct = np.mean(np.sum(internal_energy,1),0) * vc
+        del internal_energy
         logging.info("The calculation of internal energy flux is finished!")
         # Latent heat Lvq
-        latent_flux = constant['Lv'] * v * q * dp_level / constant['g']
-        latent_flux_int = np.mean(np.sum(latent_flux,1),0)
-        del latent_flux
-        latent_flux_correct = constant['Lv'] * q * dp_level / constant['g']
-        latent_flux_int_correct = np.mean(np.sum(latent_flux_correct,1),0) * vc
-        del latent_flux_correct, q
+        latent_energy = constant['Lv'] * q * dp_level / constant['g']
+        del q
+        latent_flux_int = np.mean(np.sum(latent_energy * v,1),0)
+        latent_flux_int_correct = np.mean(np.sum(latent_energy,1),0) * vc
+        del latent_energy
         logging.info("The calculation of latent heat flux is finished!")
         # Geopotential Energy gz
-        geopotential_flux = v * gz * dp_level / constant['g']
-        geopotential_flux_int = np.mean(np.sum(geopotential_flux,1),0)
-        del geopotential_flux
-        geopotential_flux_correct = gz * dp_level / constant['g']
-        geopotential_flux_int_correct = np.mean(np.sum(geopotential_flux_correct,1),0) * vc
-        del geopotential_flux_correct, gz
+        geopotential_energy = gz * dp_level / constant['g']
+        geopotential_flux_int = np.mean(np.sum(geopotential_energy * v,1),0)
+        del gz
+        geopotential_flux_int_correct = np.mean(np.sum(geopotential_energy,1),0) * vc
+        del geopotential_energy
         logging.info("The calculation of geopotential energy flux is finished!")
         # Kinetic Energy u2+v2
-        kinetic_flux = v * 1/2 *(u**2 + v**2) * dp_level / constant['g']
-        kinetic_flux_int = np.mean(np.sum(kinetic_flux,1),0)
-        del kinetic_flux
-        kinetic_flux_correct = 1/2 *(u**2 + v**2) * dp_level / constant['g']
-        kinetic_flux_int_correct = np.mean(np.sum(kinetic_flux_correct,1),0) * vc
-        del kinetic_flux_correct, u ,v
+        kinetic_energy = 1/2 * (u**2 + v**2) * dp_level / constant['g']
+        del u
+        kinetic_flux_int = np.mean(np.sum(kinetic_energy * v,1),0)
+        kinetic_flux_int_correct = np.mean(np.sum(kinetic_energy,1),0) * vc
+        del kinetic_energy, v
         logging.info("The calculation of kinetic energy flux is finished!")
         # the earth is taken as a perfect sphere, instead of a ellopsoid
         dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / x
@@ -158,7 +149,6 @@ class met:
             E_latent_correct[i,:] = (latent_flux_int_correct[i,:]) * dx[i]/1e+12
             E_geopotential_correct[i,:] = (geopotential_flux_int_correct[i,:]) * dx[i]/1e+12
             E_kinetic_correct[i,:] = (kinetic_flux_int_correct[i,:]) * dx[i]/1e+12
-
 
         E_total = E_internal + E_latent + E_geopotential + E_kinetic
         E_total_correct = E_internal_correct + E_latent_correct + E_geopotential_correct + E_kinetic_correct

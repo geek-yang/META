@@ -180,6 +180,8 @@ class jra55:
         year = np.arange(year_start, year_end+1, 1)
         month = np.arange(1, 13, 1)
         namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+        long_month_list = np.array([1,3,5,7,8,10,12])
+        leap_year_list = np.array([1976,1980,1984,1988,1992,1996,2000,2004,2008,2012,2016,2020])
         # define sigma level
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
@@ -205,73 +207,40 @@ class jra55:
                 key_10d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.033_ugrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_vgrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
-
-
-
-    key_10d_ugrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.033_ugrd.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_10d_vgrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.034_vgrd.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_10d_spfh = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.051_spfh.reg_tl319.%d%s0100_%d%s1018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    # for the second 10 days
-    key_20d_hgt = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.007_hgt.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_20d_tmp = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.011_tmp.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_20d_ugrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.033_ugrd.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_20d_vgrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.034_vgrd.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    key_20d_spfh = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.051_spfh.reg_tl319.%d%s1100_%d%s2018' %(year,namelist_month[month-1],year,namelist_month[month-1]))
-    # for the rest of days
-    if month in long_month_list:
-        last_day = 31
-    elif month == 2:
-        if year in leap_year_list:
-            last_day = 29
-        else:
-            last_day = 28
-    else:
-        last_day = 30
-    # deal with the changing last day of each month
-    key_30d_hgt = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.007_hgt.reg_tl319.%d%s2100_%d%s%d18' %(year,namelist_month[month-1],year,namelist_month[month-1],last_day))
-    key_30d_tmp = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.011_tmp.reg_tl319.%d%s2100_%d%s%d18' %(year,namelist_month[month-1],year,namelist_month[month-1],last_day))
-    key_30d_ugrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.033_ugrd.reg_tl319.%d%s2100_%d%s%d18' %(year,namelist_month[month-1],year,namelist_month[month-1],last_day))
-    key_30d_vgrd = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.034_vgrd.reg_tl319.%d%s2100_%d%s%d18' %(year,namelist_month[month-1],year,namelist_month[month-1],last_day))
-    key_30d_spfh = pygrib.open(datapath + os.sep + 'jra%d' % (year) + os.sep + 'anl_mdl.051_spfh.reg_tl319.%d%s2100_%d%s%d18' %(year,namelist_month[month-1],year,namelist_month[month-1],last_day))
-    print "Retrieving datasets successfully and return the variable key!"
-
-                    # extract fields for the calculation of tendency terms
-                    if j == 1:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i-1, 12))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i-1, 12))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
-                        if i == year_start:
-                            datapath_q_last = datapath_T_q_u_v
-                            datapath_lnsp_last = datapath_z_lnsp
-                    elif j == 12:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i+1, 1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
-                        if i == year_end:
-                            datapath_q_next = datapath_T_q_u_v
-                            datapath_lnsp_next = datapath_z_lnsp
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                # for the second 10 days
+                key_20d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.033_ugrd.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                # for the rest of days
+                if j in long_month_list:
+                    last_day = 31
+                elif j == 2:
+                    if i in leap_year_list:
+                        last_day = 29
                     else:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j+1))
+                        last_day = 28
+                else:
+                    last_day = 30
+                # deal with the changing last day of each month
+                key_30d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.033_ugrd.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                print "Retrieving datasets successfully and return the variable key!"
+                u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
+                # extract fields for the calculation of tendency terms
+
                     # get all the variables for the mass budget correction
                     T_q_u_v_key = Dataset(datapath_T_q_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)
@@ -363,21 +332,35 @@ class jra55:
         Lvq = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         gz = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         uv2 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+
+        E_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of AMET
         for i in year:
+            counter_surface = 0
             for j in month:
                 logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
                 # determine how many days are there in a month
                 # for the first 10 days
                 key_10d_hgt = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_hgt.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                                           'anl_mdl.007_hgt.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_tmp = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_tmp.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                                           'anl_mdl.011_tmp.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_10d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.033_ugrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_vgrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                           'anl_mdl.033_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
-
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                z = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                T = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
                     # get all the variables for the mass budget correction
                     T_q_u_v_key = Dataset(datapath_T_q_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)

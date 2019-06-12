@@ -401,10 +401,10 @@ class erai:
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
         uvc_key = Dataset(path_uvc)
-        lat = uvc_key['latitude'][:]
-        lon = uvc_key['longitude'][:]
+        lat = uvc_key.variables['latitude'][:]
+        lon = uvc_key.variables['longitude'][:]
         #uc = uvc_key['uc'][:]
-        vc = uvc_key['vc'][:]
+        vc = uvc_key.variables['vc'][:]
         # calculate the reference levels based on A & B and standard surface pressure
         half_level = A + B * 101325
         level = (half_level[1:] + half_level[:-1]) / 2
@@ -418,6 +418,12 @@ class erai:
         Lvq = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         gz = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         uv2 = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+
+        E_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        cpT_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        Lvq_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        gz_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
+        uv2_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of AMET
         if fields == 1:
             for i in year:
