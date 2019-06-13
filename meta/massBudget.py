@@ -329,6 +329,7 @@ class correction_SH:
         intermediate_nc.ncInterCorrect(sp_mean, moisture_tendency, moisture_flux_u_int,
                                        moisture_flux_v_int, sp_tendency, mass_flux_u_int,
                                        mass_flux_v_int, precipitable_water_int, t, lat, lon, out_path)
+        del u, v, q # save memory
         ########################################################################
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
