@@ -30,12 +30,15 @@ This library is designed to work with the atmospheric and oceanic reanalysis pro
 * SODA3           [Univ. Maryland] <br>
 
 ## Dependency
-META is tested on python 3 and has the following dependencies:
+META is tested on python 2.6, 2.7 and 3.6 and has the following dependencies:
 * numpy
 * matplotlib
 * netcdf
 * scipy
 * cartopy
 * iris
+* pygrib
+
+It also requires NCL for the barotropic mass correction as the computation may take place within Spherical Harmonics.
 
 
