@@ -115,7 +115,7 @@ class met:
         del geopotential_energy
         logging.info("The calculation of geopotential energy flux is finished!")
         # Kinetic Energy u2+v2
-        kinetic_energy = 1/2 * (u**2 + v**2) * dp_level / constant['g']
+        kinetic_energy = 0.5 * (u**2 + v**2) * dp_level / constant['g']
         del u
         kinetic_flux_int = np.mean(np.sum(kinetic_energy * v,1),0)
         kinetic_flux_int_correct = np.mean(np.sum(kinetic_energy,1),0) * vc
@@ -124,7 +124,7 @@ class met:
         # the earth is taken as a perfect sphere, instead of a ellopsoid
         dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * lat / 360) / x
         # plugin the weight of grid box width and apply the correction
-        dx[0] = 0
+        #dx[0] = 0
         # create arrays for each energy transport components after correction
         E_internal = np.zeros((y, x),dtype=float)
         E_latent = np.zeros((y, x),dtype=float)

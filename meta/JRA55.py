@@ -72,7 +72,7 @@ import meta.saveNetCDF
 import pygrib
 
 class jra55:
-    def __init__(self, path, out_path):
+    def __init__(self, path, out_path, package_path):
         """
         Initialize the extraction of fields from ERA-Interim.
 
@@ -91,7 +91,7 @@ class jra55:
         self.out_path = out_path
         # 0.75 deg per grid box latitudinally
         self.lat_unit = 319
-        #self.package_path = package_path
+        self.package_path = package_path
 
     @staticmethod
     def defineSigmaLevels():
@@ -189,7 +189,7 @@ class jra55:
         example_key = example_grbs.message(1)
         lats, lons = benchmark_key.latlons()
         #time = example_key['time'][:]
-        lat = lats[:,0]
+        lat = lats[::-1,0]
         lon = lons[0,:]
         level = np.arange(60)
         example_grbs.close()
@@ -234,62 +234,132 @@ class jra55:
                                            'anl_mdl.034_vgrd.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 key_30d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
-                print "Retrieving datasets successfully and return the variable key!"
+                print("Retrieving datasets successfully and return the variable key!")
                 u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
-                # extract fields for the calculation of tendency terms
+                # get the target fields
+                # the first ten days
+                # reset counters
+                counter_time = 0
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_u = key_10d_ugrd.message(counter_message)
+                    key_v = key_10d_vgrd.message(counter_message)
+                    key_q = key_10d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_10d_ugrd.close()
+                key_10d_vgrd.close()
+                key_10d_spfh.close()
+                # the second ten days
+                # reset counters
+                counter_time = 4*10 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_u = key_20d_ugrd.message(counter_message)
+                    key_v = key_20d_vgrd.message(counter_message)
+                    key_q = key_20d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_20d_ugrd.close()
+                key_20d_vgrd.close()
+                key_20d_spfh.close()
+                # the third ten days
+                # reset counters
+                counter_time = 4*20 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_u = key_30d_ugrd.message(counter_message)
+                    key_v = key_30d_vgrd.message(counter_message)
+                    key_q = key_30d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_30d_ugrd.close()
+                key_30d_vgrd.close()
+                key_30d_spfh.close()
+                # surface pressure
+                key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                         'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(i,i))
+                counter_message = 1
+                while (counter_message <= last_day*4 + counter_surface):
+                    key_sp = key_sp_year.message(counter_surface + counter_message)
+                    sp[counter_message-1,:,:] = key_sp.values
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_sp_year.close()
+                # renew the surface counter for next loop (a new month)
+                counter_surface = counter_surface + counter_message - 1
+                # get time dimension
+                time = np.arange(last_day*4)
+                # extract variables for the calculation of tendency
+                q_last = q[0,:,::-1,:]
+                q_next = q[-1,:,::-1,:]
+                sp_last = sp[0,::-1,:]
+                sp_next = sp[-1,::-1,:]
+                logging.info("Extract all the required variables for {0}(y)-{1}(m) successfully!".format(i, j))
+                if method == 'SH':
+                    # start the mass correction
+                    SinkSource = meta.massBudget.correction_SH()
+                    uc, vc = SinkSource.massCorrect(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
+                                                    v[:,:,::-1,:], q_last, q_next, sp_last, sp_next, A, B,
+                                                    len(time), len(level), len(lat), len(lon), lat, lon,
+                                                    self.lat_unit, self.out_path,  self.package_path)
+                elif method == 'FD':
+                    # start the mass correction
+                    SinkSource = meta.massBudget.correction_FD()
+                    uc, vc = SinkSource.massCorrect(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
+                                                    v[:,:,::-1,:], q_last, q_next, sp_last,
+                                                    sp_next, A, B, len(time), len(level),
+                                                    len(lat), len(lon), lat, self.lat_unit)
+                else:
+                    IOError("Please choose the methods listed in the documentation!")
+                # save the output to the data pool
+                uc_pool[i-year_start,j-1,:,:] = uc
+                vc_pool[i-year_start,j-1,:,:] = vc
+        # export output as netCDF files
+        packing = meta.saveNetCDF.savenc()
+        packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
 
-                    # get all the variables for the mass budget correction
-                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
-                    z_lnsp_key = Dataset(datapath_z_lnsp)
-                    # get the variable keys for the calculation of tendency during mass budget correction
-                    q_last_key = Dataset(datapath_q_last)
-                    q_next_key = Dataset(datapath_q_next)
-                    lnsp_last_key = Dataset(datapath_lnsp_last)
-                    lnsp_next_key = Dataset(datapath_lnsp_next)
-                    logging.info("Get the key of all the required variables for {}(y)-{}(m)".format(i, j))
-                    # extract variables
-                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
-                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
-                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
-                    # get time dimension
-                    time = T_q_u_v_key.variables['time'][:]
-                    # extract variables for the calculation of tendency
-                    q_last = q_last_key.variables['q'][-1,:,::-1,:]
-                    q_next = q_next_key.variables['q'][0,:,::-1,:]
-                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,::-1,:]
-                    lnsp_next = lnsp_next_key.variables['lnsp'][0,::-1,:]
-                    # calculate sp
-                    sp = np.exp(lnsp)
-                    sp_last = np.exp(lnsp_last)
-                    sp_next = np.exp(lnsp_next)
-                    del lnsp, lnsp_last, lnsp_next
-                    logging.info("Extract all the required variables for {}(y)-{}(m) successfully!".format(i, j))
-                    if method == 'SH':
-                        # start the mass correction
-                        SinkSource = meta.massBudget.correction_SH()
-                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path)
-                    elif method == 'FD':
-                        # start the mass correction
-                        SinkSource = meta.massBudget.correction_FD()
-                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
-                    else:
-                        IOError("Please follow the naming rule as described in the documentation!")
-                    # save the output to the data pool
-                    uc_pool[i-year_start,j-1,:,:] = uc
-                    vc_pool[i-year_start,j-1,:,:] = vc
-            # export output as netCDF files
-            packing = meta.saveNetCDF.savenc()
-            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
 
-
-    def amet(self, year_start, year_end, path_uvc, fields=1):
+    def amet(self, year_start, year_end, path_uvc):
         """
         Quantify Meridional Energy Transport.
         param year_start: the starting time for the calculation
@@ -310,7 +380,9 @@ class jra55:
         # initialize the time span
         year = np.arange(year_start, year_end+1, 1)
         month = np.arange(1, 13, 1)
-        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+        long_month_list = np.array([1,3,5,7,8,10,12])
+        leap_year_list = np.array([1976,1980,1984,1988,1992,1996,2000,2004,2008,2012,2016,2020])
         # define sigma level
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
@@ -355,46 +427,169 @@ class jra55:
                                            'anl_mdl.034_vgrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_10d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.051_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                # for the second 10 days
+                key_20d_hgt = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.007_hgt.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_tmp = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.011_tmp.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.033_ugrd.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                key_20d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
+                # for the rest of days
+                if j in long_month_list:
+                    last_day = 31
+                elif j == 2:
+                    if i in leap_year_list:
+                        last_day = 29
+                    else:
+                        last_day = 28
+                else:
+                    last_day = 30
+                # deal with the changing last day of each month
+                key_30d_hgt = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.007_hgt.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_tmp = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.011_tmp.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.033_ugrd.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_vgrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.034_vgrd.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                key_30d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
+                                           'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                print "Retrieving datasets successfully and return the variable key!"
                 z = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 T = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
-                    # get all the variables for the mass budget correction
-                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
-                    z_lnsp_key = Dataset(datapath_z_lnsp)
-                    logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
-                    # extract variables
-                    T = T_q_u_v_key.variables['t'][:,:,::-1,:]
-                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
-                    z = z_lnsp_key.variables['z'][:,::-1,:]
-                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
-                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
-                    # get time dimension
-                    time = T_q_u_v_key.variables['time'][:]
-                    #level = T_q_key.variables['level'][:]
-                    # calculate sp
-                    sp = np.exp(lnsp)
-                    # calculate geopotential
-                    print ('Calculate geopotential on each model level.')
-                    gz = self.calc_gz(T, q, sp, z, A, B, len(time),
-                                      len(level), len(lat), len(lon))
-                    logging.info("Extracting variables successfully!")
-                    AMET = meta.amet.met()
-                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
-                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],
-                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz[:,::-1,:],
-                                                                  A, B, len(time), len(level),
-                                                                  len(lat), len(lon), lat,
-                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
+                # get the target fields
+                # the first ten days
+                # reset counters
+                counter_time = 0
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_z = key_10d_hgt.message(counter_message)
+                    key_T = key_10d_tmp.message(counter_message)
+                    key_u = key_10d_ugrd.message(counter_message)
+                    key_v = key_10d_vgrd.message(counter_message)
+                    key_q = key_10d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    T[counter_time,counter_lev,:,:] = key_T.values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_10d_hgt.close()
+                key_10d_vgrd.close()
+                key_10d_ugrd.close()
+                key_10d_vgrd.close()
+                key_10d_spfh.close()
+                # the second ten days
+                # reset counters
+                counter_time = 4*10 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_z = key_20d_hgt.message(counter_message)
+                    key_T = key_20d_tmp.message(counter_message)
+                    key_u = key_20d_ugrd.message(counter_message)
+                    key_v = key_20d_vgrd.message(counter_message)
+                    key_q = key_20d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    T[counter_time,counter_lev,:,:] = key_T.values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_20d_hgt.close()
+                key_20d_vgrd.close()
+                key_20d_ugrd.close()
+                key_20d_vgrd.close()
+                key_20d_spfh.close()
+                # the third ten days
+                # reset counters
+                counter_time = 4*20 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_z = key_30d_hgt.message(counter_message)
+                    key_T = key_30d_tmp.message(counter_message)
+                    key_u = key_30d_ugrd.message(counter_message)
+                    key_v = key_30d_vgrd.message(counter_message)
+                    key_q = key_30d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    T[counter_time,counter_lev,:,:] = key_T.values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    v[counter_time,counter_lev,:,:] = key_v.values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_30d_hgt.close()
+                key_30d_vgrd.close()
+                key_30d_ugrd.close()
+                key_30d_vgrd.close()
+                key_30d_spfh.close()
+                # surface pressure
+                key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                         'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(i,i))
+                counter_message = 1
+                while (counter_message <= last_day*4 + counter_surface):
+                    key_sp = key_sp_year.message(counter_surface + counter_message)
+                    sp[counter_message-1,:,:] = key_sp.values
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_sp_year.close()
+                # renew the surface counter for next loop (a new month)
+                counter_surface = counter_surface + counter_message - 1
+                logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
+                # get time dimension
+                time = np.arange(last_day*4)
+                # generate the contants
+                constant = setConstants()
+                # the unit of z is m, need to be changed to m2/s2 before feed to the function
+                AMET = meta.amet.met()
+                E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
+                uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
+                gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[:,::-1,:],
+                                                              u[:,:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
+                                                              A, B, len(time), len(level), len(lat), len(lon), lat,
+                                                              self.lat_unit, vc[i-year_start,j-1,:,:])
                 # save output as netCDF files
                 packing = meta.saveNetCDF.savenc()
                 packing.ncAMET(E, cpT, Lvq, gz, uv2,
                                E_c, cpT_c, Lvq_c, gz_c, uv2_c,
                                i, level, lat, lon, self.out_path)
-
 
     def eddies(self, year_start, year_end):
         """

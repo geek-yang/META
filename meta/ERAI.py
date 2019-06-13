@@ -273,7 +273,7 @@ class erai:
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                     len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
                     else:
-                        IOError("Please follow the naming rule as described in the documentation!")
+                        IOError("Please choose the methods listed in the documentation!")
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
@@ -365,7 +365,7 @@ class erai:
                         uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                         len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
                     else:
-                        IOError("Please follow the naming rule as described in the documentation!")
+                        IOError("Please choose the methods listed in the documentation!")
                     # save the output to the data pool
                     uc_pool[i-year_start,j-1,:,:] = uc
                     vc_pool[i-year_start,j-1,:,:] = vc
@@ -450,14 +450,14 @@ class erai:
                     # calculate sp
                     sp = np.exp(lnsp)
                     # calculate geopotential
-                    print ('Calculate geopotential on each model level.')
-                    gz = self.calc_gz(T, q, sp, z, A, B, len(time),
-                                      len(level), len(lat), len(lon))
+                    print ('Calculate geopotential height on each model level.')
+                    z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
+                                           len(level), len(lat), len(lon))
                     logging.info("Extracting variables successfully!")
                     AMET = meta.amet.met()
                     E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
-                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],
-                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz[:,::-1,:],
+                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
+                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, z_model[:,:,::-1,:],
                                                                   A, B, len(time), len(level),
                                                                   len(lat), len(lon), lat,
                                                                   self.lat_unit, vc[i-year_start,j-1,:,:])
@@ -495,18 +495,20 @@ class erai:
                     sp = np.exp(lnsp)
                     # calculate geopotential
                     print ('Calculate geopotential on each model level.')
-                    gz = self.calc_gz(T, q, sp, z, A, B, len(time),
+                    z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
                                       len(level), len(lat), len(lon))
                     logging.info("Extracting variables successfully!")
                     AMET = meta.amet.met()
-                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:], uv2[j-1,:,:],\
-                    E_vert[j-1,:,:], cpT_vert[j-1,:,:], Lvq_vert[j-1,:,:], gz_vert[j-1,:,:], \
-                    uv2_vert[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, gz, A, B, len(time),
-                                             len(level), len(lat), len(lon), lat,
-                                             self.lat_unit, vc[i-year_start,j-1,:,:])
+                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
+                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
+                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, z_model[:,:,::-1,:],
+                                                                  A, B, len(time), len(level),
+                                                                  len(lat), len(lon), lat,
+                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
                 # save output as netCDF files
                 packing = meta.saveNetCDF.savenc()
                 packing.ncAMET(E, cpT, Lvq, gz, uv2,
+                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
                                i, level, lat, lon, self.out_path)
         else:
             IOError("Please follow the naming rule as described in the documentation!")
