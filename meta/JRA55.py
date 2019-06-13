@@ -187,7 +187,7 @@ class jra55:
         # use example input file to load the basic dimensions information
         example_grbs = pygrib.open(example)
         example_key = example_grbs.message(1)
-        lats, lons = benchmark_key.latlons()
+        lats, lons = example_key.latlons()
         #time = example_key['time'][:]
         lat = lats[::-1,0]
         lon = lons[0,:]
@@ -317,7 +317,7 @@ class jra55:
                 key_30d_spfh.close()
                 # surface pressure
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                         'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(i,i))
+                                         'anl_surf.001_pres.reg_tl319.{}010100_{}123118'.format(i,i)))
                 counter_message = 1
                 while (counter_message <= last_day*4 + counter_surface):
                     key_sp = key_sp_year.message(counter_surface + counter_message)
@@ -356,7 +356,7 @@ class jra55:
                 vc_pool[i-year_start,j-1,:,:] = vc
         # export output as netCDF files
         packing = meta.saveNetCDF.savenc()
-        packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
+        packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path, name='JRA55')
 
 
     def amet(self, year_start, year_end, path_uvc):
@@ -562,7 +562,7 @@ class jra55:
                 key_30d_spfh.close()
                 # surface pressure
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                         'anl_surf.001_pres.reg_tl319.%d010100_%d123118' %(i,i))
+                                         'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
                 counter_message = 1
                 while (counter_message <= last_day*4 + counter_surface):
                     key_sp = key_sp_year.message(counter_surface + counter_message)
@@ -589,7 +589,7 @@ class jra55:
                 packing = meta.saveNetCDF.savenc()
                 packing.ncAMET(E, cpT, Lvq, gz, uv2,
                                E_c, cpT_c, Lvq_c, gz_c, uv2_c,
-                               i, level, lat, lon, self.out_path)
+                               i, level, lat, lon, self.out_path, name='JRA55')
 
     def eddies(self, year_start, year_end):
         """
