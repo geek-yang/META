@@ -196,32 +196,32 @@ class erai:
             for i in year:
                 for j in month:
                     logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
-                    datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
+                    datapath_T_q_u_v = os.path.join(self.path,'era{0}'.format(i),
                                                     'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
+                    datapath_z_lnsp = os.path.join(self.path,'era{0}'.format(i),
                                                    'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
                     # extract fields for the calculation of tendency terms
                     if j == 1:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i-1),
                                                        'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i-1, 12))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i),
                                                        'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i-1),
                                                           'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i-1, 12))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i),
                                                           'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
                         if i == year_start:
                             datapath_q_last = datapath_T_q_u_v
                             datapath_lnsp_last = datapath_z_lnsp
                     elif j == 12:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i+1, 1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
+                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i),
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j-1))
+                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i+1),
+                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i+1, 1))
+                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j-1))
+                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i+1),
+                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i+1, 1))
                         if i == year_end:
                             datapath_q_next = datapath_T_q_u_v
                             datapath_lnsp_next = datapath_z_lnsp
