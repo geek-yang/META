@@ -10,7 +10,7 @@ from netCDF4 import Dataset
 import os
 import platform
 #import statistics
-import meta.ERAI
+import meta.JRA55
 
 print (platform.architecture())
 print (os.path)
