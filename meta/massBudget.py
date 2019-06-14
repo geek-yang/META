@@ -250,11 +250,12 @@ class correction_SH:
 
         return constant
 
-    def massCorrect(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                    t, h, y, x, lat, lon, lat_unit, out_path, package_path):
+    def massInter(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                  t, h, y, x, lat, lon, lat_unit, out_path, package_path):
         """
-        Perform mass budget correction. It is based on the hypothesis that the
-        mass imbalance mainly comes from the baratropic winds.
+        First step for performing mass budget correction. It is based on the hypothesis that the
+        mass imbalance mainly comes from the baratropic winds. All the divergence and tendency
+        terms are calculated and saved as netCDF files for the use of NCL via spherical harmonics.
         All the input files should contain the fields for the entire month.
         param q: Specific Humidity [kg/kg]
         param sp: Surface Pressure [Pa]
@@ -329,7 +330,21 @@ class correction_SH:
         intermediate_nc.ncInterCorrect(sp_mean, moisture_tendency, moisture_flux_u_int,
                                        moisture_flux_v_int, sp_tendency, mass_flux_u_int,
                                        mass_flux_v_int, precipitable_water_int, t, lat, lon, out_path)
-        del u, v, q # save memory
+
+
+    def massCorrect(self, out_path, package_path):
+        """
+        Perform mass budget correction via spherical harmonics with NCL.
+        This is a subprocess module from python using bash shell to call
+        NCL. This module is designed as a seperate module since python
+        subprocess can eat out a lot memory.
+        When calling for a subprocess in python, python will execute
+        self.pid = os.fork()
+        this command asks the system for the same amount of memery as it is
+        possessed now by python.
+        So, a memory saving solution is to call this function early or call
+        it after python releasing memory.
+        """
         ########################################################################
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
