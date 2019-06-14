@@ -24,10 +24,10 @@ if __name__=="__main__":
     output_path = "/home/lwc16308/reanalysis/JRA55/output/SH"
     package_path = "/home/lwc16308/META"
     example = "/projects/0/blueactn/reanalysis/JRA55/subdaily/jra2000/anl_mdl.011_tmp.reg_tl319.2000010100_2000011018"
-    uvc_path = "/home/lwc16308/reanalysis/JRA55/output/SH/.nc"
+    uvc_path = "/home/lwc16308/reanalysis/JRA55/output/SH/jra_model_subdaily_2005_2005_uvc_point.nc"
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
     #instance.massCorrect(2005,2005,example)
     #instance.amet(1979,2016,uvc_path)
-    instance.amet(1979,2016,uvc_path)
+    instance.amet_memoryWise(2005,2005,uvc_path)

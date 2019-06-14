@@ -159,7 +159,7 @@ class met:
         return E_total, E_internal, E_latent, E_geopotential, E_kinetic, \
                E_total_correct, E_internal_correct, E_latent_correct, E_geopotential_correct, E_kinetic_correct
 
-    def calc_internal(self, T, sp, v, A, B, t, h, y, x,
+    def calc_internal(self, T, q, sp, v, A, B, t, h, y, x,
                       lat, lat_unit, vc):
         """
         Calculate the meridional energy transport and its components in the atmosphere.
