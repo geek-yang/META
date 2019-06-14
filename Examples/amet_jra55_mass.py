@@ -27,6 +27,4 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
-    #instance.massCorrect(2005,2005,example)
-    #instance.amet(1979,2016,uvc_path)
-    instance.amet_memoryWise(2005,2005,uvc_path)
+    instance.massCorrect(2001,2015,example)
