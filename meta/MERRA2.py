@@ -175,61 +175,72 @@ class merra2:
         # initialize the time span
         year = np.arange(year_start, year_end+1, 1)
         month = np.arange(1, 13, 1)
-        #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # date and time arrangement
+        # namelist of month and days for file manipulation
+        namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+        namelist_day = ['01','02','03','04','05','06','07','08','09','10',
+                        '11','12','13','14','15','16','17','18','19','20',
+                        '21','22','23','24','25','26','27','28','29','30',
+                        '31']
+        # index of months
+        period = np.arange(start_year,end_year+1,1)
+        index_month = np.arange(1,13,1)
+        index_days_long = np.arange(31)
+        index_days_short = np.arange(30)
+        index_days_Feb_short = np.arange(28)
+        index_days_Feb_long = np.arange(29)
+        long_month_list = np.array([1,3,5,7,8,10,12])
+        leap_year_list = np.array([1976,1980,1984,1988,1992,1996,2000,2004,2008,2012,2016,2020])
         # define sigma level
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
         example_key = Dataset(example)
         #time = example_key['time'][:]
-        lat = example_key.variables['latitude'][:]
-        lon = example_key.variables['longitude'][:]
-        level = example_key.variables['level'][:]
+        lat = example_key.variables['lat'][:]
+        lon = example_key.variables['lon'][:]
+        level = example_key.variables['lev'][:]
         # create space for the output
         uc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of divergent corrected winds
-        if fields == 1:
-            for i in year:
-                for j in month:
-                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
-                    datapath_T_q_u_v = os.path.join(self.path,'era{}'.format(i),
-                                                    'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{}'.format(i),
-                                                   'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
-                    # extract fields for the calculation of tendency terms
-                    if j == 1:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i-1, 12))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i-1),
-                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i-1, 12))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
-                        if i == year_start:
+        # loop for calculation
+        for i in period:
+            for j in index_month:
+                # determine how many days are there in a month
+                if j in long_month_list:
+                    days = index_days_long
+                elif j == 2:
+                    if i in leap_year_list:
+                        days = index_days_Feb_long
+                    else:
+                        days = index_days_Feb_short
+                else:
+                    days = index_days_short
+                for k in days:
+                    logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(year,namelist_month[month-1],namelist_day[day]))
+                    if year < 1992:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                    elif year < 2001:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                    elif year < 2011:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                    else:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                    # get the variable keys
+                    var_key = Dataset(datapath_var)
+                    # The shape of each variable is (8,72,361,576)
+                    logging.info("Retrieving variables for from {0} (y) - {1} (m) - {2} (d) successfully!".format(year,namelist_month[month-1],namelist_day[day]))
+
+
+
                             datapath_q_last = datapath_T_q_u_v
                             datapath_lnsp_last = datapath_z_lnsp
-                    elif j == 12:
-                        datapath_q_last = os.path.join(self.path,'era{}'.format(i),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                       'model_daily_075_{}_{}_T_q_u_v.nc'.format(i+1, 1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{}'.format(i),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{}'.format(i+1),
-                                                          'model_daily_075_{}_{}_z_lnsp.nc'.format(i+1, 1))
+
                         if i == year_end:
                             datapath_q_next = datapath_T_q_u_v
                             datapath_lnsp_next = datapath_z_lnsp
                     else:
-                        datapath_q_last = os.path.join(self.path,'era{0}'.format(i),
-                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j-1))
-                        datapath_q_next = os.path.join(self.path,'era{0}'.format(i),
-                                                       'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j+1))
-                        datapath_lnsp_last = os.path.join(self.path,'era{0}'.format(i),
-                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j-1))
-                        datapath_lnsp_next = os.path.join(self.path,'era{0}'.format(i),
-                                                          'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j+1))
+
                     # get all the variables for the mass budget correction
                     T_q_u_v_key = Dataset(datapath_T_q_u_v)
                     z_lnsp_key = Dataset(datapath_z_lnsp)

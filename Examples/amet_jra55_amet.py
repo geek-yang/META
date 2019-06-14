@@ -11,6 +11,7 @@ import os
 import platform
 #import statistics
 import meta.JRA55
+import meta.JRA55_memoryWise
 
 print (platform.architecture())
 print (os.path)
@@ -27,5 +28,6 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
-    instance.massCorrect(2005,2005,example)
+    #instance.massCorrect(2005,2005,example)
     #instance.amet(1979,2016,uvc_path)
+    instance.amet(1979,2016,uvc_path)

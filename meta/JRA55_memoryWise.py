@@ -17,7 +17,9 @@ Description     : This module aims to load fields from the standard netCDF files
                   sigma grid with a horizontal resolution of 320 (lat) x 640 (lon) and 60 vertical
                   levels.
 
-                  The processing unit is monthly data, for the sake of memory saving.
+                  The processing unit is monthly data. This script optimizes the use
+                  of memory through quantifying each component step by step instead of
+                  loading all the fields at once.
 
 Return Values   : netCDF files
 Caveat!         : This module is designed to work with a batch of files. Hence, there is
@@ -463,11 +465,11 @@ class jra55:
                 key_30d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 print "Retrieving datasets successfully and return the variable key!"
-                z = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                ############################################################################
+                ####                    calculate temperature transport               ####
+                ############################################################################
                 T = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
-                u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
-                q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
                 # get the target fields
                 # the first ten days
@@ -477,30 +479,21 @@ class jra55:
                 counter_message = 1
                 while (counter_message <= 60*4*10):
                     # take the key
-                    key_z = key_10d_hgt.message(counter_message)
                     key_T = key_10d_tmp.message(counter_message)
-                    key_u = key_10d_ugrd.message(counter_message)
                     key_v = key_10d_vgrd.message(counter_message)
-                    key_q = key_10d_spfh.message(counter_message)
                     # 60 levels (0-59)
                     if counter_lev == 60:
                         counter_lev = 0
                         counter_time = counter_time + 1
                     # take the values
-                    z[counter_time,counter_lev,:,:] = key_z.values
                     T[counter_time,counter_lev,:,:] = key_T.values
-                    u[counter_time,counter_lev,:,:] = key_u.values
                     v[counter_time,counter_lev,:,:] = key_v.values
-                    q[counter_time,counter_lev,:,:] = key_q.values
                     # push the counter
                     counter_lev = counter_lev + 1
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_10d_hgt.close()
                 key_10d_tmp.close()
-                key_10d_ugrd.close()
                 key_10d_vgrd.close()
-                key_10d_spfh.close()
                 # the second ten days
                 # reset counters
                 counter_time = 4*10 # !!! time should not reset!!!
@@ -508,30 +501,21 @@ class jra55:
                 counter_message = 1
                 while (counter_message <= 60*4*10):
                     # take the key
-                    key_z = key_20d_hgt.message(counter_message)
                     key_T = key_20d_tmp.message(counter_message)
-                    key_u = key_20d_ugrd.message(counter_message)
                     key_v = key_20d_vgrd.message(counter_message)
-                    key_q = key_20d_spfh.message(counter_message)
                     # 60 levels (0-59)
                     if counter_lev == 60:
                         counter_lev = 0
                         counter_time = counter_time + 1
                     # take the values
-                    z[counter_time,counter_lev,:,:] = key_z.values
                     T[counter_time,counter_lev,:,:] = key_T.values
-                    u[counter_time,counter_lev,:,:] = key_u.values
                     v[counter_time,counter_lev,:,:] = key_v.values
-                    q[counter_time,counter_lev,:,:] = key_q.values
                     # push the counter
                     counter_lev = counter_lev + 1
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_20d_hgt.close()
                 key_20d_tmp.close()
-                key_20d_ugrd.close()
                 key_20d_vgrd.close()
-                key_20d_spfh.close()
                 # the third ten days
                 # reset counters
                 counter_time = 4*20 # !!! time should not reset!!!
@@ -539,30 +523,21 @@ class jra55:
                 counter_message = 1
                 while (counter_message <= 60*4*(last_day-20)):
                     # take the key
-                    key_z = key_30d_hgt.message(counter_message)
                     key_T = key_30d_tmp.message(counter_message)
-                    key_u = key_30d_ugrd.message(counter_message)
                     key_v = key_30d_vgrd.message(counter_message)
-                    key_q = key_30d_spfh.message(counter_message)
                     # 60 levels (0-59)
                     if counter_lev == 60:
                         counter_lev = 0
                         counter_time = counter_time + 1
                     # take the values
-                    z[counter_time,counter_lev,:,:] = key_z.values
                     T[counter_time,counter_lev,:,:] = key_T.values
-                    u[counter_time,counter_lev,:,:] = key_u.values
                     v[counter_time,counter_lev,:,:] = key_v.values
-                    q[counter_time,counter_lev,:,:] = key_q.values
                     # push the counter
                     counter_lev = counter_lev + 1
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_30d_hgt.close()
                 key_30d_tmp.close()
-                key_30d_ugrd.close()
                 key_30d_vgrd.close()
-                key_30d_spfh.close()
                 # surface pressure
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
                                          'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
@@ -575,24 +550,229 @@ class jra55:
                 key_sp_year.close()
                 # renew the surface counter for next loop (a new month)
                 counter_surface = counter_surface + counter_message - 1
-                logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
+                logging.info("Get the keys of all the required variables for {0}(y)-{1}(m)".format(i, j))
                 # get time dimension
                 time = np.arange(last_day*4)
                 # generate the contants
                 constant = self.setConstants()
                 # the unit of z is m, need to be changed to m2/s2 before feed to the function
                 AMET = meta.amet.met()
-                E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
-                uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
-                gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[:,::-1,:],
-                                                              u[:,:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
-                                                              A, B, len(time), len(level), len(lat), len(lon), lat,
-                                                              self.lat_unit, vc[i-year_start,j-1,:,:])
+                cpT[j-1,:,:], cpT_c[j-1,:,:] = AMET.calc_internal(T[:,:,::-1,:], sp[:,::-1,:],
+                                                                  v[:,:,::-1,:], A, B, len(time),
+                                                                  len(level), len(lat), len(lon), lat,
+                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
+                del T
+                ############################################################################
+                ####                    calculate latent energy transport               ####
+                ############################################################################
+                q = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                # get the target fields
+                # the first ten days
+                # reset counters
+                counter_time = 0
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_q = key_10d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_10d_spfh.close()
+                # the second ten days
+                # reset counters
+                counter_time = 4*10 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_q = key_20d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_20d_spfh.close()
+                # the third ten days
+                # reset counters
+                counter_time = 4*20 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*(last_day-20)):
+                    # take the key
+                    key_q = key_30d_spfh.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    q[counter_time,counter_lev,:,:] = key_q.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_30d_spfh.close()
+                # calculate energy transport
+                Lvq[j-1,:,:], Lvq_c[j-1,:,:] = AMET.calc_latent(q[:,:,::-1,:], sp[:,::-1,:], v[:,:,::-1,:],
+                                                                A, B, len(time), len(level), len(lat), len(lon), lat,
+                                                                self.lat_unit, vc[i-year_start,j-1,:,:])
+                del q
+                ############################################################################
+                ####              calculate geopotential energy transport               ####
+                ############################################################################
+                z = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                # get the target fields
+                # the first ten days
+                # reset counters
+                counter_time = 0
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_z = key_10d_hgt.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_10d_hgt.close()
+                # the second ten days
+                # reset counters
+                counter_time = 4*10 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_z = key_20d_hgt.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_20d_hgt.close()
+                # the third ten days
+                # reset counters
+                counter_time = 4*20 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*(last_day-20)):
+                    # take the key
+                    key_z = key_30d_hgt.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    z[counter_time,counter_lev,:,:] = key_z.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_30d_hgt.close()
+                # calculate energy transport
+                gz[j-1,:,:], gz_c[j-1,:,:] = AMET.calc_geopotential(sp[:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
+                                                                    A, B, len(time), len(level), len(lat), len(lon), lat,
+                                                                    self.lat_unit, vc[i-year_start,j-1,:,:])
+                del z
+                ############################################################################
+                ####                  calculate kinetic energy transport                ####
+                ############################################################################
+                u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
+                # get the target fields
+                # the first ten days
+                # reset counters
+                counter_time = 0
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_u = key_10d_ugrd.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_10d_ugrd.close()
+                # the second ten days
+                # reset counters
+                counter_time = 4*10 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*10):
+                    # take the key
+                    key_u = key_20d_ugrd.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_20d_ugrd.close()
+                # the third ten days
+                # reset counters
+                counter_time = 4*20 # !!! time should not reset!!!
+                counter_lev = 0
+                counter_message = 1
+                while (counter_message <= 60*4*(last_day-20)):
+                    # take the key
+                    key_u = key_30d_ugrd.message(counter_message)
+                    # 60 levels (0-59)
+                    if counter_lev == 60:
+                        counter_lev = 0
+                        counter_time = counter_time + 1
+                    # take the values
+                    u[counter_time,counter_lev,:,:] = key_u.values
+                    # push the counter
+                    counter_lev = counter_lev + 1
+                    counter_message = counter_message + 1
+                # close all the grib files
+                key_30d_ugrd.close()
+                # calculate energy transport
+                uv2[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_kinetic(sp[:,::-1,:],  u[:,:,::-1,:], v[:,:,::-1,:],
+                                                                 A, B, len(time), len(level), len(lat), len(lon), lat,
+                                                                 self.lat_unit, vc[i-year_start,j-1,:,:])
+                del u, v
+                ############################################################################
+                ####                    calculate total energy transport                ####
+                ############################################################################
+                E[j-1,:,:] = cpT[j-1,:,:] + Lvq[j-1,:,:] + gz[j-1,:,:] + uv2[j-1,:,:]
+                E_c[j-1,:,:] = cpT_c[j-1,:,:] + Lvq_c[j-1,:,:] + gz_c[j-1,:,:] + uv2_c[j-1,:,:]
             # save output as netCDF files
             packing = meta.saveNetCDF.savenc()
             packing.ncAMET(E, cpT, Lvq, gz, uv2,
-                           E_c, cpT_c, Lvq_c, gz_c, uv2_c,
-                           i, level, lat, lon, self.out_path, name='JRA55')
+                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
+                               i, level, lat, lon, self.out_path, name='JRA55')
 
     def eddies(self, year_start, year_end):
         """
