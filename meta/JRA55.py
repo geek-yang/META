@@ -292,10 +292,10 @@ class jra55:
                 key_20d_spfh.close()
                 # the third ten days
                 # reset counters
-                counter_time = 4*20 # !!! time should not reset!!!
+                counter_time = 4*2*10 # !!! time should not reset!!!
                 counter_lev = 0
                 counter_message = 1
-                while (counter_message <= 60*4*10):
+                while (counter_message <= 60*4*(last_day-20)):
                     # take the key
                     key_u = key_30d_ugrd.message(counter_message)
                     key_v = key_30d_vgrd.message(counter_message)
@@ -319,7 +319,7 @@ class jra55:
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
                                          'anl_surf.001_pres.reg_tl319.{}010100_{}123118'.format(i,i)))
                 counter_message = 1
-                while (counter_message <= last_day*4 + counter_surface):
+                while (counter_message <= last_day*4):
                     key_sp = key_sp_year.message(counter_surface + counter_message)
                     sp[counter_message-1,:,:] = key_sp.values
                     counter_message = counter_message + 1
@@ -344,7 +344,7 @@ class jra55:
                                          self.lat_unit, self.out_path, self.package_path)
                     del u, v, q # save memory
                     # call bash to execute ncl script via subprocess
-                    SinkSource.massCorrect(self.out_path, self.package_path)
+                    uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                 elif method == 'FD':
                     # start the mass correction
                     SinkSource = meta.massBudget.correction_FD()
@@ -537,7 +537,7 @@ class jra55:
                 counter_time = 4*20 # !!! time should not reset!!!
                 counter_lev = 0
                 counter_message = 1
-                while (counter_message <= 60*4*10):
+                while (counter_message <= 60*4*(last_day-20)):
                     # take the key
                     key_z = key_30d_hgt.message(counter_message)
                     key_T = key_30d_tmp.message(counter_message)
@@ -567,7 +567,7 @@ class jra55:
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
                                          'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
                 counter_message = 1
-                while (counter_message <= last_day*4 + counter_surface):
+                while (counter_message <= last_day*4):
                     key_sp = key_sp_year.message(counter_surface + counter_message)
                     sp[counter_message-1,:,:] = key_sp.values
                     counter_message = counter_message + 1

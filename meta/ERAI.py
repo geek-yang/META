@@ -264,9 +264,12 @@ class erai:
                     if method == 'SH':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
-                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                        SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                         len(time), len(level), len(lat), len(lon), lat, lon,
                                                         self.lat_unit, self.out_path, self.package_path)
+                        del u, v, q # save memory
+                        # call bash to execute ncl script via subprocess
+                        uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                     elif method == 'FD':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_FD()
@@ -356,9 +359,12 @@ class erai:
                     if method == 'SH':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
-                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path, self.package_path)
+                        SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
+                                               len(time), len(level), len(lat), len(lon), lat, lon,
+                                               self.lat_unit, self.out_path, self.package_path)
+                        del u, v, q # save memory
+                        # call bash to execute ncl script via subprocess
+                        uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                     elif method == 'FD':
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_FD()
