@@ -193,7 +193,7 @@ class met:
         # calculate each component of total energy and take the vertical integral
         # Internal Energy cpT
         internal_energy = constant['cp'] * (1-q) * T * dp_level / constant['g']
-        del T
+        del T, q
         internal_flux_int = np.mean(np.sum(internal_energy * v,1),0)
         internal_flux_int_correct = np.mean(np.sum(internal_energy,1),0) * vc
         del internal_energy
