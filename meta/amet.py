@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Calculate Meridional Energy Transport in the Atmosphere with Reanalysis
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.08.01
-Last Update     : 2018.08.08
+Last Update     : 2019.06.08
 Contributor     :
 Description     : This module provides a method to perform the computation
                   of meridional energy transport in the atmosphere. Moreover,
@@ -15,7 +15,8 @@ Description     : This module provides a method to perform the computation
                   of baratropic wind correction terms from the mass budget
                   conservation.
 Return Values   : netCDF files
-Caveat!         :
+Caveat!         : It is highly recommended to compute all the fluxes on native
+                  grids.
 """
 
 import numpy as np

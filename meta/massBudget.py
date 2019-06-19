@@ -251,7 +251,7 @@ class correction_SH:
         return constant
 
     def massInter(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                  t, h, y, x, lat, lon, lat_unit, out_path, package_path):
+                  t, h, y, x, lat, lon, last_day, lat_unit, out_path, package_path):
         """
         First step for performing mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds. All the divergence and tendency
@@ -269,6 +269,7 @@ class correction_SH:
         param x: longitude dimension of input fields
         param lat: latitude
         param lat_unit: number of grid boxes meridionally (to calculate the unit width)
+        param last_day: number of days in this month
 
         returns: barotropic corrected wind components in meridional (vc)
                  zonal (uc) direction
@@ -300,7 +301,7 @@ class correction_SH:
         moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
         # compute the moisture tendency (one day has 86400s)
         moisture_tendency = ((moisture_end + moisture_next) / 2 -
-                             (moisture_last + moisture_start) / 2) / (30*86400) / constant['g']
+                             (moisture_last + moisture_start) / 2) / (last_day * 86400) / constant['g']
         logging.info("The calculation of precipitable water tendency is finished!")
         # calculate the delta pressure for the current month
         sp_mean = np.mean(sp,0)
@@ -312,7 +313,7 @@ class correction_SH:
         moisture_flux_v_int = np.sum((v * q * dp_level / constant['g']),1)
         logging.info("The calculation of divergent verically integrated moisture flux is finished!")
         # calculate surface pressure tendency
-        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (30 * 86400)
+        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (last_day * 86400)
         logging.info("The calculation of surface pressure tendency is finished!")
         # calculte the mean mass flux for a certain month and take the vertical integral
         mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
@@ -332,7 +333,7 @@ class correction_SH:
                                        mass_flux_v_int, precipitable_water_int, t, lat, lon, out_path)
 
 
-    def massCorrect(self, out_path, package_path):
+    def massCorrect(self, out_path, package_path, method='GG'):
         """
         Perform mass budget correction via spherical harmonics with NCL.
         This is a subprocess module from python using bash shell to call
@@ -344,14 +345,24 @@ class correction_SH:
         possessed now by python.
         So, a memory saving solution is to call this function early or call
         it after python releasing memory.
+        param method: methods for the computation of divergence/inverse Laplacian/gradients
+        GG (default) compute via spherical harmonics from variables on Gaussian grid
+        FG compute via spherical harmonics from variables on fixed grid
+        For the definition of grid types denoted in NCL, please see:
+        https://www.ncl.ucar.edu/Document/Functions/sphpk_grids.shtml
         """
         ########################################################################
         ####  call NCL to compute divergence / inverse Laplacian / gradient ####
         ########################################################################
         # call ncl via bash scheduler
-        subprocess.call(['bash','{0}/meta/scheduler_SH.sh'.format(package_path),'{0}/'.format(out_path),
-                         '{0}/'.format(package_path)])
-        logging.info("Computation of barotropic correction wind on each grid point is finished!")
+        if method == 'GG':
+            subprocess.call(['bash','{0}/meta/scheduler_SH_GaussianG.sh'.format(package_path),'{0}/'.format(out_path),
+                            '{0}/'.format(package_path)])
+            logging.info("Computation of barotropic correction wind on each grid point is finished!")
+        if method == 'FG'
+            subprocess.call(['bash','{0}/meta/scheduler_SH_FixedG.sh'.format(package_path),'{0}/'.format(out_path),
+                            '{0}/'.format(package_path)])
+            logging.info("Computation of barotropic correction wind on each grid point is finished!")
         # load temporary file and get uc and vc
         datapath_temp_uvc = os.path.join(out_path,'temp_uvc.nc')
         temp_uvc_key = Dataset(datapath_temp_uvc)

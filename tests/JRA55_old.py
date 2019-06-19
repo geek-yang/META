@@ -4,21 +4,18 @@ Copyright Netherlands eScience Center
 Function        : Extract Meteorological fields from JRA55
 Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2019.06.11
-Last Update     : 2019.06.16
+Last Update     : 2019.06.15
 Contributor     :
-Description     : This module aims to load fields from the standard GRIB files
+Description     : This module aims to load fields from the standard netCDF files
                   downloaded directly from online data system of NCAR/UCAR Research
                   Data Archive. It provides an entrance for the following computation
                   includes the mass budget correction, quantification of meridional
-                  energy transport.
-
+                  energy transport, decomposition of eddies.
                   JRA55 is a state-of-the-art atmosphere reanalysis product produced
                   by JMA (Japan). It spans from 1979 to 2015. Natively it is generated on a hybrid
-                  sigma grid with a horizontal resolution of 0.56 x 0.56 deg and 60 vertical
+                  sigma grid with a horizontal resolution of 320 (lat) x 640 (lon) and 60 vertical
                   levels.
-
                   The processing unit is monthly data, for the sake of memory saving.
-
 Return Values   : netCDF files
 Caveat!         : This module is designed to work with a batch of files. Hence, there is
                   pre-requists for the location and arrangement of data. The folder should
@@ -39,10 +36,7 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                           /anl_mdl.051_spfh.reg_tl319.1979010100_1979011018
                           ...
                   Please use the default names after downloading from NCAR/UCAR Research
-                  Data Archive. The files are in GRIB format. It is highly recommended to
-                  use the data on native grid, which is on N160 Regualr Gaussian Grid.
-                  Originally, JRA55 has descending lat.
-
+                  Data Archive. The files are in GRIB format.
 """
 
 ##########################################################################
@@ -200,10 +194,7 @@ class jra55:
             counter_surface = 0
             for j in month:
                 logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
-                # retrieve the keys of input files
-                ############################################################################
-                #####              Retrieve variables for the current month            #####
-                ############################################################################
+                # determine how many days are there in a month
                 # for the first 10 days
                 key_10d_ugrd = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.033_ugrd.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
@@ -218,7 +209,7 @@ class jra55:
                                            'anl_mdl.034_vgrd.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
                 key_20d_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                            'anl_mdl.051_spfh.reg_tl319.{0}{1}1100_{2}{3}2018'.format(i,namelist_month[j-1],i,namelist_month[j-1])))
-                # determine how many days are there in a month
+                # for the rest of days
                 if j in long_month_list:
                     last_day = 31
                 elif j == 2:
@@ -318,7 +309,7 @@ class jra55:
                 key_30d_spfh.close()
                 # surface pressure
                 key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                          'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
+                                         'anl_surf.001_pres.reg_tl319.{}010100_{}123118'.format(i,i)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
                     key_sp = key_sp_year.message(counter_surface + counter_message)
@@ -328,141 +319,29 @@ class jra55:
                 key_sp_year.close()
                 # renew the surface counter for next loop (a new month)
                 counter_surface = counter_surface + counter_message - 1
-                ############################################################################
-                #####              Retrieve variables for the tendency terms           #####
-                ############################################################################
-                # retrieve the keys of input files for the computation of tendency terms
-                q_last = np.zeros((60,len(lat),len(lon)),dtype = float)
-                q_next = np.zeros((60,len(lat),len(lon)),dtype = float)
-                if j == 1:
-                    # last month
-                    try:
-                        key_last_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i-1),
-                                                    'anl_mdl.051_spfh.reg_tl319.{0}122100_{1}123118'.format(i-1,i-1)))
-                        # get the number of messages in that file
-                        message_last_spfh = key_last_spfh.messages
-                        counter_lev = 0
-                        while (counter_lev<60):
-                            key_last_q = key_last_spfh.message(message_last_spfh-60+counter_lev+1)
-                            q_last[counter_lev,:,:] = key_last_q.values
-                            counter_lev = counter_lev + 1
-                        key_last_spfh.close()
-                        key_last_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                       'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i-1,i-1)))
-                        message_last_sp = key_last_sp_year.messages # get the number of messages in that file
-                         # message starts from 1
-                        key_last_sp = key_last_sp_year.message(message_last_sp)
-                        sp_last = key_last_sp.values
-                        key_last_sp_year.close()
-                    except: # year out of span, not available
-                        print("This is the first year!")
-                        q_last = q[0,:,:,:]
-                        sp_last = sp[0,:,:]
-                    # next month
-                    key_next_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                                'anl_mdl.051_spfh.reg_tl319.{0}020100_{1}021018'.format(i,i)))
-                    counter_lev = 0
-                    while (counter_lev<60):
-                        key_next_q = key_next_spfh.message(counter_lev+1)
-                        q_next[counter_lev,:,:] = key_next_q.values
-                        counter_lev = counter_lev + 1
-                    key_next_spfh.close()
-                    key_next_sp_year =  pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                    'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_next_sp = key_next_sp_year.message(counter_surface+1)
-                    sp_next = key_next_sp.values
-                    key_next_sp_year.close()
-                elif j == 12:
-                    # last month
-                    key_last_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                                'anl_mdl.051_spfh.reg_tl319.{0}112100_{1}113018'.format(i,i)))
-                    message_last_spfh = key_last_spfh.messages
-                    counter_lev = 0
-                    while (counter_lev<60):
-                        key_last_q = key_last_spfh.message(message_last_spfh-60+counter_lev+1)
-                        q_last[counter_lev,:,:] = key_last_q.values
-                        counter_lev = counter_lev + 1
-                    key_last_spfh.close()
-                    key_last_sp_year =  pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                    'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_last_sp = key_last_sp_year.message(counter_surface - last_day*4)
-                    sp_last = key_last_sp.values
-                    key_last_sp_year.close()
-                    # next month
-                    try:
-                        key_next_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i+1),
-                                                    'anl_mdl.051_spfh.reg_tl319.{0}010100_{1}011018'.format(i+1,i+1)))
-                        counter_lev = 0
-                        while (counter_lev<60):
-                            key_next_q = key_next_spfh.message(counter_lev+1)
-                            q_next[counter_lev,:,:] = key_next_q.values
-                            counter_lev = counter_lev + 1
-                        key_next_spfh.close()
-                        key_next_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                       'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i+1,i+1)))
-                        key_next_sp = key_next_sp_year.message(1)
-                        sp_next = key_next_sp.values
-                        key_next_sp_year.close()
-                    except: # year exceed the span, not available
-                        print("This is the last year!")
-                        q_next = q[-1,:,:,:]
-                        sp_next = sp[-1,:,:]
-                else: # neither year 1 nor year 12
-                    # check the number of days in last month
-                    j_last = j-1
-                    j_next = j+1
-                    if j_last in long_month_list:
-                        last_month_last_day = 31
-                    elif j_last == 2:
-                        if i in leap_year_list:
-                            last_month_last_day = 29
-                        else:
-                            last_month_last_day = 28
-                    else:
-                        last_month_last_day = 30
-                    key_last_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                                'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j_last-1],i,namelist_month[j_last-1],last_month_last_day)))
-                    key_next_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
-                                                'anl_mdl.051_spfh.reg_tl319.{0}{1}0100_{2}{3}1018'.format(i,namelist_month[j_next-1],i,namelist_month[j_next-1])))
-                    message_last_spfh = key_last_spfh.messages
-                    counter_lev = 0
-                    while (counter_lev<60):
-                        key_last_q = key_last_spfh.message(message_last_spfh-60+counter_lev+1)
-                        key_next_q = key_next_spfh.message(counter_lev+1)
-                        q_next[counter_lev,:,:] = key_next_q.values
-                        q_last[counter_lev,:,:] = key_last_q.values
-                        counter_lev = counter_lev + 1
-                    key_next_spfh.close()
-                    key_last_spfh.close()
-                    key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                              'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_last_sp = key_sp_year.message(counter_surface - last_day*4)
-                    key_next_sp = key_sp_year.message(counter_surface+1)
-                    sp_last = key_last_sp.values
-                    sp_next = key_next_sp.values
-                    key_sp_year.close()
-                ############################################################################
-                #####            Conduct mass correction based on continuity           #####
-                ############################################################################
                 # get time dimension
                 time = np.arange(last_day*4)
+                # extract variables for the calculation of tendency
+                q_last = q[0,:,::-1,:]
+                q_next = q[-1,:,::-1,:]
+                sp_last = sp[0,::-1,:]
+                sp_next = sp[-1,::-1,:]
                 logging.info("Extract all the required variables for {0}(y)-{1}(m) successfully!".format(i, j))
                 if method == 'SH':
                     # start the mass correction
                     SinkSource = meta.massBudget.correction_SH()
                     SinkSource.massInter(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
-                                         v[:,:,::-1,:], q_last[:,::-1,:], q_next[:,::-1,:],
-                                         sp_last[::-1,:], sp_next[::-1,:], A, B, len(time),
-                                         len(level), len(lat), len(lon), lat, lon, last_day,
+                                         v[:,:,::-1,:], q_last, q_next, sp_last, sp_next, A, B,
+                                         len(time), len(level), len(lat), len(lon), lat, lon,
                                          self.lat_unit, self.out_path, self.package_path)
-                    del u, v, q, sp # save memory
+                    del u, v, q # save memory
                     # call bash to execute ncl script via subprocess
                     uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                 elif method == 'FD':
                     # start the mass correction
                     SinkSource = meta.massBudget.correction_FD()
-                    uc, vc = SinkSource.massCorrect(q[:,:,:,:], sp[:,:,:], u[:,:,:,:],
-                                                    v[:,:,:,:], q_last, q_next, sp_last,
+                    uc, vc = SinkSource.massCorrect(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
+                                                    v[:,:,::-1,:], q_last, q_next, sp_last,
                                                     sp_next, A, B, len(time), len(level),
                                                     len(lat), len(lon), lat, self.lat_unit)
                 else:
@@ -738,7 +617,7 @@ class jra55:
         lat = uvc_key['latitude'][:]
         lon = uvc_key['longitude'][:]
         #uc = uvc_key['uc'][:]
-        vc = uvc_key['vc'][:] # with ascending lat
+        vc = uvc_key['vc'][:]
         # calculate the levels based on A & B and standard surface pressure
         half_level = A + B * 101325
         level = (half_level[1:] + half_level[:-1]) / 2
@@ -874,7 +753,7 @@ class jra55:
                 E_1, cpT_1, Lvq_1, gz_1, uv2_1, E_c_1, cpT_c_1, Lvq_c_1, gz_c_1,\
                 uv2_c_1 = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[:10*4,::-1,:],
                                         u[:,:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
-                                        A, B, len(time), len(level), len(lat), len(lon), lat[:],
+                                        A, B, len(time), len(level), len(lat), len(lon), lat,
                                         self.lat_unit, vc[i-year_start,j-1,:,:])
                 ############################################################################
                 ####         calculate energy transport for the second 10 days          ####
@@ -920,19 +799,19 @@ class jra55:
                 time = np.arange(10*4)
                 # the unit of z is m, need to be changed to m2/s2 before feed to the function
                 AMET = meta.amet.met()
-                E_2, cpT_2, Lvq_2, gz_2, uv2_2, E_c_2, cpT_c_2, Lvq_c_2, gz_c_2,\
-                uv2_c_2 = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[10*4:10*4*2,::-1,:],
+                E_2, cpT_2, Lvq_2, gz_2, uv2_2, E_c_2, cpT_c_2, Lvq_c_2, gz_c_2\
+                uv2_c_2[j-1,:,:] = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[10*4:10*4*2,::-1,:],
                                                  u[:,:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
-                                                 A, B, len(time), len(level), len(lat), len(lon), lat[::-1],
+                                                 A, B, len(time), len(level), len(lat), len(lon), lat,
                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
                 ############################################################################
                 ####          calculate energy transport for the last few days          ####
                 ############################################################################
-                z = np.zeros(((last_day-20)*4,60,len(lat),len(lon)),dtype = float)
-                T = np.zeros(((last_day-20)*4,60,len(lat),len(lon)),dtype = float)
-                u = np.zeros(((last_day-20)*4,60,len(lat),len(lon)),dtype = float)
-                v = np.zeros(((last_day-20)*4,60,len(lat),len(lon)),dtype = float)
-                q = np.zeros(((last_day-20)*4,60,len(lat),len(lon)),dtype = float)
+                z = np.zeros(((last_day-10)*4,60,len(lat),len(lon)),dtype = float)
+                T = np.zeros(((last_day-10)*4,60,len(lat),len(lon)),dtype = float)
+                u = np.zeros(((last_day-10)*4,60,len(lat),len(lon)),dtype = float)
+                v = np.zeros(((last_day-10)*4,60,len(lat),len(lon)),dtype = float)
+                q = np.zeros(((last_day-10)*4,60,len(lat),len(lon)),dtype = float)
                 # the third ten days
                 # reset counters
                 counter_time = 0 # !!! time should not reset!!!
@@ -966,13 +845,13 @@ class jra55:
                 key_30d_spfh.close()
                 logging.info("Get the keys of all the required variables for the last few days in {0}(y)-{1}(m)".format(i, j))
                 # get time dimension
-                time = np.arange((last_day-20)*4)
+                time = np.arange((last_day-10)*4)
                 # the unit of z is m, need to be changed to m2/s2 before feed to the function
                 AMET = meta.amet.met()
                 E_3, cpT_3, Lvq_3, gz_3, uv2_3, E_c_3, cpT_c_3, Lvq_c_3, gz_c_3, \
                 uv2_c_3 = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[10*4*2:,::-1,:],
                                         u[:,:,::-1,:], v[:,:,::-1,:], z[:,:,::-1,:] * constant['g'],
-                                        A, B, len(time), len(level), len(lat), len(lon), lat[:],
+                                        A, B, len(time), len(level), len(lat), len(lon), lat,
                                         self.lat_unit, vc[i-year_start,j-1,:,:])
                 ############################################################################
                 ####                    calculate total energy transport                ####
@@ -991,8 +870,8 @@ class jra55:
             # save output as netCDF files
             packing = meta.saveNetCDF.savenc()
             packing.ncAMET(E, cpT, Lvq, gz, uv2,
-                           E_c, cpT_c, Lvq_c, gz_c, uv2_c,
-                           i, level, lat, lon, self.out_path, name='JRA55')
+                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
+                               i, level, lat, lon, self.out_path, name='JRA55')
 
 
     def eddies(self, year_start, year_end):

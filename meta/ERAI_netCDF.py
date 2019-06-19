@@ -265,9 +265,9 @@ class erai:
                         # start the mass correction
                         SinkSource = meta.massBudget.correction_SH()
                         SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path, self.package_path)
-                        del u, v, q # save memory
+                                               len(time), len(level), len(lat), len(lon), lat, lon,
+                                               last_day, self.lat_unit, self.out_path, self.package_path)
+                        del u, v, q, lnsp # save memory
                         # call bash to execute ncl script via subprocess
                         uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                     elif method == 'FD':
@@ -361,8 +361,8 @@ class erai:
                         SinkSource = meta.massBudget.correction_SH()
                         SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
                                                len(time), len(level), len(lat), len(lon), lat, lon,
-                                               self.lat_unit, self.out_path, self.package_path)
-                        del u, v, q # save memory
+                                               last_day, self.lat_unit, self.out_path, self.package_path)
+                        del u, v, q, lnsp # save memory
                         # call bash to execute ncl script via subprocess
                         uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                     elif method == 'FD':
