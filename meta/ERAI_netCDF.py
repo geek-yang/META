@@ -39,6 +39,10 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                   includes air temperature, specific humidity, zonal and meridional wind), as it can save
                   downloading time by reducing the times of requests. It can also work with files containing
                   two variables (e.g. model_daily_075_{}_{}_T_q includes temperature and specific humidity).
+
+                  The native grid data is not available in netCDF format! The model level here
+                  is slightly interpolated to a N128 equivalent lat/lon grid with a resolution
+                  of 0.75 x 0.75.
 """
 
 ##########################################################################

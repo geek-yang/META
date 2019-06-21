@@ -30,6 +30,15 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                   Please use the default names after downloading from NASA.
                   The files are in netCDF4 format. By default, the latitude
                   ascends.
+
+                  The native grid of MERRA2 is different from normal reanalyses.
+                  It is not natively generated on a reduced Gaussian Grid. All the
+                  variables are computed on a cubed-sphere grid using GEOS-5 model.
+                  As a result, it is not suitable to bring the point data back to
+                  spherical harmonics for the calculations of divergence and gradients.
+                  More information about its grid set-up is given in the official
+                  documentation:
+                  https://gmao.gsfc.nasa.gov/pubs/docs/Bosilovich785.pdf
 """
 
 ##########################################################################

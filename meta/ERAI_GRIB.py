@@ -491,13 +491,14 @@ class erai:
                 counter_time = 0
                 counter_lev = 0
                 counter_message = 1 # first message is t, second is q
-                while (counter_message <= last_day*4*60*4):
+                while (counter_message <= last_day*4*60*4): # day x hour x levels x variables
                     # 60 levels (0-59)
                     if counter_lev == 60:
                         counter_lev = 0
                         counter_time = counter_time + 1
                     key_T_q_u_v = grib_T_q_u_v.message(counter_message)
                     T[counter_time,counter_lev,:,:] = key_T_q_u_v.values
+                    counter_message += 1
                     key_T_q_u_v = grib_T_q_u_v.message(counter_message)
                     q[counter_time,counter_lev,:,:] = key_T_q_u_v.values
                     counter_message += 1
@@ -524,46 +525,24 @@ class erai:
                 grib_z_lnsp.close()
                 # get time dimension
                 time = np.arange(last_day*4)
-                #
+                # calculate sp
+                sp = np.exp(lnsp)
+                print ('Calculate geopotential height on each model level.')
                 z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
                                        len(level), len(lat), len(lon))
-
-
-
-
-
-
-
-                    logging.info("Get the keys of all the required variables for {0}(y)-{1}(m)".format(i, j))
-                    # extract variables
-                    T = T_q_u_v_key.variables['t'][:,:,::-1,:]
-                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
-                    z = z_lnsp_key.variables['z'][:,::-1,:]
-                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
-                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
-                    # get time dimension
-                    time = T_q_u_v_key.variables['time'][:]
-                    #level = T_q_key.variables['level'][:]
-                    # calculate sp
-                    sp = np.exp(lnsp)
-                    # calculate geopotential
-                    print ('Calculate geopotential height on each model level.')
-                    z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
-                                           len(level), len(lat), len(lon))
-                    logging.info("Extracting variables successfully!")
-                    AMET = meta.amet.met()
-                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
-                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
-                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, z_model[:,:,::-1,:],
-                                                                  A, B, len(time), len(level),
-                                                                  len(lat), len(lon), lat,
-                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
-                # save output as netCDF files
-                packing = meta.saveNetCDF.savenc()
-                packing.ncAMET(E, cpT, Lvq, gz, uv2,
-                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
-                               i, level, lat, lon, self.out_path)
+                logging.info("Extracting variables successfully!")
+                AMET = meta.amet.met()
+                E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:], uv2[j-1,:,:],\
+                E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:], gz_c[j-1,:,:],\
+                uv2_c[j-1,:,:] = AMET.calc_met(T[:,:,::-1,:], q[:,:,::-1,:], sp[:,::-1,:],
+                                               u[:,:,::-1,:], v[:,:,::-1,:], z_model[:,:,::-1,:],
+                                               A, B, len(time), len(level), len(lat), len(lon),
+                                               lat, self.lat_unit, vc[i-year_start,j-1,:,:])
+            # save output as netCDF files
+            packing = meta.saveNetCDF.savenc()
+            packing.ncAMET(E, cpT, Lvq, gz, uv2,
+                           E_c, cpT_c, Lvq_c, gz_c, uv2_c,
+                           i, level, lat, lon, self.out_path)
 
     def eddies(self, year_start, year_end):
         """

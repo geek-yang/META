@@ -32,4 +32,4 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = meta.ERAI_GRIB.erai(datapath_ERAI, output_path, package_path)
-    instance.amet(2005,2005,uvc_path)
+    instance.massCorrect(2005,2005,example)
