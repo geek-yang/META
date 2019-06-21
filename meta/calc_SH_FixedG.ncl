@@ -6,6 +6,8 @@
 ; Description     : This module uses NCL to calculate divergence, inverse Laplacian,
 ;                   and gradients on spectral domain with spherical harmonics.
 ;
+;                   The input fields should be on the ordinary lat/lon grid.
+;
 ;                   The mass budget correction is based on the method provided
 ;                   by Trenberth (1991). More information is available through:
 ;                   http://www.cgd.ucar.edu/cas/catalog/newbudgets/index.html

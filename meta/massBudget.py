@@ -356,11 +356,11 @@ class correction_SH:
         ########################################################################
         # call ncl via bash scheduler
         if method == 'GG':
-            subprocess.call(['bash','{0}/meta/scheduler_SH_GaussianG.sh'.format(package_path),'{0}/'.format(out_path),
+            subprocess.call(['bash','{0}/meta/scheduler_SH_GG.sh'.format(package_path),'{0}/'.format(out_path),
                             '{0}/'.format(package_path)])
             logging.info("Computation of barotropic correction wind on each grid point is finished!")
-        if method == 'FG'
-            subprocess.call(['bash','{0}/meta/scheduler_SH_FixedG.sh'.format(package_path),'{0}/'.format(out_path),
+        if method == 'FG':
+            subprocess.call(['bash','{0}/meta/scheduler_SH_FG.sh'.format(package_path),'{0}/'.format(out_path),
                             '{0}/'.format(package_path)])
             logging.info("Computation of barotropic correction wind on each grid point is finished!")
         # load temporary file and get uc and vc

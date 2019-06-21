@@ -215,8 +215,15 @@ class erai:
                         last_day = 28
                 else:
                     last_day = 30
+                ############################################################################
+                #####              Retrieve variables for the current month            #####
+                ############################################################################
                 # get the key of grib file
-                key = grib.open()
+                grib_T_q_u_v = grib.open(os.path.join(self.path,'era{0}'.format(i),
+                                         'model_daily_N128_{0}_{1}_T_q_u_v'.format(i, j)))
+                grib_z_lnsp = grib.open(os.path.join(self.path,'era{0}'.format(i),
+                                        'model_daily_N128_{0}_{1}_z_lnsp'.format(i, j)))
+                
                 # last month
                 key_last
                 # next month

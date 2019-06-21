@@ -20,7 +20,7 @@ package_path=$2
 # setup the environment for ncl script
 export path=${out_path}
 # call ncl function
-script_ncl=${package_path}"meta/calc_SH.ncl"
+script_ncl=${package_path}"meta/calc_SH_FixedG.ncl"
 ncl -Q -n ${script_ncl}
 # delete the temporary file
 file_path=${out_path}"mass_correct_temp_flux.nc"
