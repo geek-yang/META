@@ -86,7 +86,7 @@ class correction_FD:
         return constant
 
     def massCorrect(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                    t, h, y, x, lat, lat_unit):
+                    t, h, y, x, lat, last_day, lat_unit):
         """
         Perform mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds.
@@ -119,14 +119,14 @@ class correction_FD:
         index_level = np.arange(h)
         # use matrix A and B to calculate dp based on half pressure level
         for i in index_level:
-            dp_level_start[i,:,:] = (A[i+1] + B[i+1] * sp[0,:,:]) - \
-                                    (A[i] + B[i] * sp[0,:,:])
-            dp_level_end[i,:,:] = (A[i+1] + B[i+1] * sp[-1,:,:]) - \
-                                  (A[i] + B[i] * sp[-1,:,:])
-            dp_level_last[i,:,:] = (A[i+1] + B[i+1] * sp_last) - \
-                                   (A[i] + B[i] * sp_last)
-            dp_level_next[i,:,:] = (A[i+1] + B[i+1] * sp_next) - \
-                                   (A[i] + B[i] * sp_next)
+            dp_level_start[i,:,:] = np.abs((A[i+1] + B[i+1] * sp[0,:,:]) -
+                                    (A[i] + B[i] * sp[0,:,:]))
+            dp_level_end[i,:,:] = np.abs((A[i+1] + B[i+1] * sp[-1,:,:]) -
+                                  (A[i] + B[i] * sp[-1,:,:]))
+            dp_level_last[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_last) -
+                                   (A[i] + B[i] * sp_last))
+            dp_level_next[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_next) -
+                                   (A[i] + B[i] * sp_next))
         # calculte the precipitable water tendency and take the vertical integral
         moisture_start = np.sum((q[0,:,:,:] * dp_level_start), 0) # start of the current month
         moisture_end = np.sum((q[-1,:,:,:] * dp_level_end), 0) # end of the current month
@@ -134,13 +134,13 @@ class correction_FD:
         moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
         # compute the moisture tendency (one day has 86400s)
         moisture_tendency = ((moisture_end + moisture_next) / 2 -
-                             (moisture_last + moisture_start) / 2) / (30*86400) / constant['g']
+                             (moisture_last + moisture_start) / 2) / (last_day*86400) / constant['g']
         logging.info("The calculation of precipitable water tendency is finished!")
         # calculate the delta pressure for the current month
         sp_mean = np.mean(sp,0)
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in index_level:
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] = np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculte the mean moisture flux for a certain month and take the vertical integral
         moisture_flux_u_int = np.sum((u * q * dp_level / constant['g']),1)
         moisture_flux_v_int = np.sum((v * q * dp_level / constant['g']),1)
@@ -175,7 +175,7 @@ class correction_FD:
         E_P = np.zeros((y, x),dtype = float)
         E_P = moisture_tendency + np.mean(div_moisture_flux_u,0) + np.mean(div_moisture_flux_v,0)
         logging.info("Computation of E-P on each grid point is finished!")
-        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (30 * 86400)
+        sp_tendency = ((sp[-1,:,:] + sp_next) / 2 - (sp_last + sp[0,:,:]) / 2 ) / (last_day * 86400)
         logging.info("The calculation of surface pressure tendency is finished!")
         # calculte the mean mass flux for a certain month and take the vertical integral
         mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
@@ -285,15 +285,16 @@ class correction_SH:
         # calculate the index of pressure levels
         index_level = np.arange(h)
         # use matrix A and B to calculate dp based on half pressure level
+        # take absolute value to work for input regardless of their vertical axis
         for i in index_level:
-            dp_level_start[i,:,:] = (A[i+1] + B[i+1] * sp[0,:,:]) - \
-                                    (A[i] + B[i] * sp[0,:,:])
-            dp_level_end[i,:,:] = (A[i+1] + B[i+1] * sp[-1,:,:]) - \
-                                  (A[i] + B[i] * sp[-1,:,:])
-            dp_level_last[i,:,:] = (A[i+1] + B[i+1] * sp_last) - \
-                                   (A[i] + B[i] * sp_last)
-            dp_level_next[i,:,:] = (A[i+1] + B[i+1] * sp_next) - \
-                                   (A[i] + B[i] * sp_next)
+            dp_level_start[i,:,:] = np.abs((A[i+1] + B[i+1] * sp[0,:,:]) -
+                                          (A[i] + B[i] * sp[0,:,:]))
+            dp_level_end[i,:,:] = np.abs((A[i+1] + B[i+1] * sp[-1,:,:]) -
+                                        (A[i] + B[i] * sp[-1,:,:]))
+            dp_level_last[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_last) -
+                                   (A[i] + B[i] * sp_last))
+            dp_level_next[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_next) -
+                                   (A[i] + B[i] * sp_next))
         # calculte the precipitable water tendency and take the vertical integral
         moisture_start = np.sum((q[0,:,:,:] * dp_level_start), 0) # start of the current month
         moisture_end = np.sum((q[-1,:,:,:] * dp_level_end), 0) # end of the current month
@@ -307,7 +308,7 @@ class correction_SH:
         sp_mean = np.mean(sp,0)
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in index_level:
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculte the mean moisture flux for a certain month and take the vertical integral
         moisture_flux_u_int = np.sum((u * q * dp_level / constant['g']),1)
         moisture_flux_v_int = np.sum((v * q * dp_level / constant['g']),1)

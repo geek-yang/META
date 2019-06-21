@@ -507,8 +507,9 @@ class jra55:
         #uc = uvc_key['uc'][:]
         vc = uvc_key['vc'][:]
         # calculate the levels based on A & B and standard surface pressure
+        # from surface to TOA
         half_level = A + B * 101325
-        level = (half_level[1:] + half_level[:-1]) / 2
+        level = (half_level[:-1] + half_level[1:]) / 2
         # create space for the output
         # the number at the end of each name indicates the integral
         # from surface to a certain height (hPa)
@@ -741,7 +742,7 @@ class jra55:
         vc = uvc_key['vc'][:] # with ascending lat
         # calculate the levels based on A & B and standard surface pressure
         half_level = A + B * 101325
-        level = (half_level[1:] + half_level[:-1]) / 2
+        level = (half_level[:-1] + half_level[1:]) / 2
         # create space for the output
         # the number at the end of each name indicates the integral
         # from surface to a certain height (hPa)

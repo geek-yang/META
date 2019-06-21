@@ -92,7 +92,7 @@ class met:
         # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in np.arange(h):
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculate each component of total energy and take the vertical integral
         # Internal Energy cpT
         internal_energy = constant['cp'] * (1-q) * T * dp_level / constant['g']
@@ -190,7 +190,7 @@ class met:
         # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in np.arange(h):
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculate each component of total energy and take the vertical integral
         # Internal Energy cpT
         internal_energy = constant['cp'] * (1-q) * T * dp_level / constant['g']
@@ -250,7 +250,7 @@ class met:
         # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in np.arange(h):
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculate each component of total energy and take the vertical integral
         # Latent heat Lvq
         latent_energy = constant['Lv'] * q * dp_level / constant['g']
@@ -307,7 +307,7 @@ class met:
         # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in np.arange(h):
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculate each component of total energy and take the vertical integral
         # Geopotential Energy gz
         geopotential_energy = gz * dp_level / constant['g']
@@ -364,7 +364,7 @@ class met:
         # calculate dp
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in np.arange(h):
-            dp_level[:,i,:,:] = (A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp)
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
         # calculate each component of total energy and take the vertical integral
         # Kinetic Energy u2+v2
         kinetic_energy = 0.5 * (u**2 + v**2) * dp_level / constant['g']
