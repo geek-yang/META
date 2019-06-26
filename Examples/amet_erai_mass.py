@@ -25,8 +25,8 @@ if __name__=="__main__":
     #output_path = "/home/yang/workbench/test"
     output_path = "/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/meta_out/SphericalHarm"
     package_path = "/root/runtime/META"
-    #example = '/home/yang/workbench/test/era1991/model_daily_075_1991_4_T_q.nc"
-    example = "/project/Reanalysis/ERA_Interim/Subdaily/Model/era1991/model_daily_075_1991_4_T_q_u_v.nc"
+    example = "/project/Reanalysis/ERA_Interim/Subdaily/Model/era2000/model_daily_N128_2000_4_T_q_u_v.grib"
+    #example = "/project/Reanalysis/ERA_Interim/Subdaily/Model/era1991/model_daily_075_1991_4_T_q_u_v.nc"
     #uvc_path = "/home/yang/workbench/test/model_subdaily_075_1991_1991_uvc_point.nc'
     uvc_path = "/project/Reanalysis/ERA_Interim/Subdaily/Model/HPC_Output/meta_out/SphericalHarm/era_model_subdaily_2005_2005_uvc_point.nc"
     #####################################################################################

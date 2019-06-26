@@ -68,6 +68,7 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
 import sys
 import os
 import numpy as np
+import pygrib
 import logging
 from netCDF4 import Dataset
 import meta.massBudget
@@ -223,10 +224,10 @@ class erai:
                 #####              Retrieve variables for the current month            #####
                 ############################################################################
                 # get the key of grib file
-                grib_T_q_u_v = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                         'model_daily_N128_{0}_{1}_T_q_u_v'.format(i, j)))
-                grib_z_lnsp = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                        'model_daily_N128_{0}_{1}_z_lnsp'.format(i, j)))
+                grib_T_q_u_v = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                         'model_daily_N128_{0}_{1}_T_q_u_v.grib'.format(i, j)))
+                grib_z_lnsp = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                        'model_daily_N128_{0}_{1}_z_lnsp.grib'.format(i, j)))
                 # create space for fields
                 u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 v = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
@@ -240,7 +241,7 @@ class erai:
                     # 60 levels (0-59)
                     if counter_lev == 60:
                         counter_lev = 0
-                        counter_time = counter_time + 1
+                        counter_time += 1
                     key_T_q_u_v = grib_T_q_u_v.message(counter_message)
                     q[counter_time,counter_lev,:,:] = key_T_q_u_v.values
                     counter_message += 1
@@ -251,7 +252,7 @@ class erai:
                     v[counter_time,counter_lev,:,:] = key_T_q_u_v.values
                     counter_message += 2 # skip temperature
                     # push the counter
-                    counter_lev = counter_lev + 1
+                    counter_lev += 1
                 grib_T_q_u_v.close()
                 # retrieve fields from GRIB file
                 counter_time = 0
@@ -259,8 +260,9 @@ class erai:
                 counter_message = 2 # first message is z, second is lnsp
                 while (counter_message <= last_day*4*2):
                     key_z_lnsp = grib_z_lnsp.message(counter_message)
-                    lnsp[counter_message-1,:,:] = key_z_lnsp.values
+                    lnsp[counter_time,:,:] = key_z_lnsp.values
                     counter_message += 2
+                    counter_time += 1
                 grib_z_lnsp.close()
                 ############################################################################
                 #####              Retrieve variables for the tendency terms           #####
@@ -271,18 +273,18 @@ class erai:
                 if j == 1:
                     # last month
                     try:
-                        grib_q_last = grib.open(os.path.join(self.path,'era{0}'.format(i-1),
-                                                'model_daily_N128_{0}_12_T_q_u_v'.format(i-1)))
+                        grib_q_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i-1),
+                                                'model_daily_N128_{0}_12_T_q_u_v.grib'.format(i-1)))
                         # get the number of messages in that file
                         message_q_last = grib_q_last.messages
                         counter_lev = 0
                         while (counter_lev<60):
                             key_last_q = grib_q_last.message(message_q_last-60*4+counter_lev*4+2)
                             q_last[counter_lev,:,:] = key_last_q.values
-                            counter_lev = counter_lev + 1
-                        key_last_q.close()
-                        grib_lnsp_last = grib.open(os.path.join(self.path,'era{0}'.format(i-1),
-                                                   'model_daily_N128_{0}_12_z_lnsp'.format(i-1)))
+                            counter_lev += 1
+                        grib_q_last.close()
+                        grib_lnsp_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i-1),
+                                                   'model_daily_N128_{0}_12_z_lnsp.grib'.format(i-1)))
                         message_lnsp_last = grib_lnsp_last.messages
                         key_last_lnsp = grib_lnsp_last.message(message_lnsp_last)
                         lnsp_last = key_last_lnsp.values
@@ -291,48 +293,48 @@ class erai:
                         q_last = q[0,:,:,:]
                         lnsp_last = lnsp[0,:,:]
                     # next month
-                    grib_q_next = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                            'model_daily_N128_{0}_2_T_q_u_v'.format(i)))
+                    grib_q_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                            'model_daily_N128_{0}_2_T_q_u_v.grib'.format(i)))
                     counter_lev = 0
                     while (counter_lev<60):
                         key_next_q = grib_q_next.message(counter_lev*4+2)
                         q_next[counter_lev,:,:] = key_next_q.values
-                        counter_lev = counter_lev + 1
-                    key_next_q.close()
-                    grib_lnsp_next = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                               'model_daily_N128_{0}_2_z_lnsp'.format(i)))
+                        counter_lev += 1
+                    grib_q_next.close()
+                    grib_lnsp_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                               'model_daily_N128_{0}_2_z_lnsp.grib'.format(i)))
                     key_next_lnsp = grib_lnsp_next.message(2)
                     lnsp_next = key_next_lnsp.values
                     grib_lnsp_next.close()
                 elif j == 12:
                     # last month
-                    grib_q_last = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                            'model_daily_N128_{0}_11_T_q_u_v'.format(i)))
+                    grib_q_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                            'model_daily_N128_{0}_11_T_q_u_v.grib'.format(i)))
                     message_q_last = grib_q_last.messages
                     counter_lev = 0
                     while (counter_lev<60):
                         key_last_q = grib_q_last.message(message_q_last-60*4+counter_lev*4+2)
                         q_last[counter_lev,:,:] = key_last_q.values
-                        counter_lev = counter_lev + 1
-                    key_last_q.close()
-                    grib_lnsp_last = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                               'model_daily_N128_{0}_11_z_lnsp'.format(i)))
+                        counter_lev += 1
+                    grib_q_last.close()
+                    grib_lnsp_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                               'model_daily_N128_{0}_11_z_lnsp.grib'.format(i)))
                     message_lnsp_last = grib_lnsp_last.messages
                     key_last_lnsp = grib_lnsp_last.message(message_lnsp_last)
                     lnsp_last = key_last_lnsp.values
                     grib_lnsp_last.close()
                     # next month
                     try:
-                        grib_q_next = grib.open(os.path.join(self.path,'era{0}'.format(i+1),
-                                                'model_daily_N128_{0}_1_T_q_u_v'.format(i+1)))
+                        grib_q_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i+1),
+                                                'model_daily_N128_{0}_1_T_q_u_v.grib'.format(i+1)))
                         counter_lev = 0
                         while (counter_lev<60):
                             key_next_q = grib_q_next.message(counter_lev*4+2)
                             q_next[counter_lev,:,:] = key_next_q.values
-                            counter_lev = counter_lev + 1
-                        key_next_q.close()
-                        grib_lnsp_next = grib.open(os.path.join(self.path,'era{0}'.format(i+1),
-                                                       'model_daily_N128_{0}_1_z_lnsp'.format(i+1)))
+                            counter_lev += 1
+                        grib_q_next.close()
+                        grib_lnsp_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i+1),
+                                                       'model_daily_N128_{0}_1_z_lnsp.grib'.format(i+1)))
                         key_next_lnsp = grib_lnsp_next.message(2)
                         lnsp_next = key_next_lnsp.values
                         grib_lnsp_next.close()
@@ -341,32 +343,32 @@ class erai:
                         lnsp_next = lnsp[-1,:,:]
                 else:
                     # last month
-                    grib_q_last = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                            'model_daily_N128_{0}_{1}_T_q_u_v'.format(i,j-1)))
+                    grib_q_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                            'model_daily_N128_{0}_{1}_T_q_u_v.grib'.format(i,j-1)))
                     message_q_last = grib_q_last.messages
                     counter_lev = 0
                     while (counter_lev<60):
                         key_last_q = grib_q_last.message(message_q_last-60*4+counter_lev*4+2)
                         q_last[counter_lev,:,:] = key_last_q.values
-                        counter_lev = counter_lev + 1
-                    key_last_q.close()
-                    grib_lnsp_last = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                               'model_daily_N128_{0}_{1}_z_lnsp'.format(i,j-1)))
+                        counter_lev += 1
+                    grib_q_last.close()
+                    grib_lnsp_last = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                               'model_daily_N128_{0}_{1}_z_lnsp.grib'.format(i,j-1)))
                     message_lnsp_last = grib_lnsp_last.messages
                     key_last_lnsp = grib_lnsp_last.message(message_lnsp_last)
                     lnsp_last = key_last_lnsp.values
                     grib_lnsp_last.close()
                     # next month
-                    grib_q_next = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                            'model_daily_N128_{0}_{1}_T_q_u_v'.format(i,j+1)))
+                    grib_q_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                            'model_daily_N128_{0}_{1}_T_q_u_v.grib'.format(i,j+1)))
                     counter_lev = 0
                     while (counter_lev<60):
                         key_next_q = grib_q_next.message(counter_lev*4+2)
                         q_next[counter_lev,:,:] = key_next_q.values
-                        counter_lev = counter_lev + 1
-                    key_next_q.close()
-                    grib_lnsp_next = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                               'model_daily_N128_{0}_{1}_z_lnsp'.format(i,j+1)))
+                        counter_lev += 1
+                    grib_q_next.close()
+                    grib_lnsp_next = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                               'model_daily_N128_{0}_{1}_z_lnsp.grib'.format(i,j+1)))
                     key_next_lnsp = grib_lnsp_next.message(2)
                     lnsp_next = key_next_lnsp.values
                     grib_lnsp_next.close()
@@ -385,12 +387,12 @@ class erai:
                 if method == 'SH':
                     # start the mass correction
                     SinkSource = meta.massBudget.correction_SH()
-                    SinkSource.massCorrect(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
-                                           v[:,:,::-1,:], q_last[:,::-1,:], q_next[:,::-1,:],
-                                           sp_last[::-1,:], sp_next[::-1,:], A, B,
-                                           len(time), len(level), len(lat), len(lon), lat, lon,
-                                           last_day, self.lat_unit, self.out_path, self.package_path)
-                    del u, v, q, lnsp # save memory
+                    SinkSource.massInter(q[:,:,::-1,:], sp[:,::-1,:], u[:,:,::-1,:],
+                                         v[:,:,::-1,:], q_last[:,::-1,:], q_next[:,::-1,:],
+                                         sp_last[::-1,:], sp_next[::-1,:], A, B,
+                                         len(time), len(level), len(lat), len(lon), lat, lon,
+                                         last_day, self.lat_unit, self.out_path, self.package_path)
+                    del u, v, q, sp # save memory
                     # call bash to execute ncl script via subprocess
                     uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
                 elif method == 'FD':
@@ -476,10 +478,10 @@ class erai:
                 #####              Retrieve variables for the current month            #####
                 ############################################################################
                 # get the key of grib file
-                grib_T_q_u_v = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                         'model_daily_N128_{0}_{1}_T_q_u_v'.format(i, j)))
-                grib_z_lnsp = grib.open(os.path.join(self.path,'era{0}'.format(i),
-                                        'model_daily_N128_{0}_{1}_z_lnsp'.format(i, j)))
+                grib_T_q_u_v = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                         'model_daily_N128_{0}_{1}_T_q_u_v.grib'.format(i, j)))
+                grib_z_lnsp = pygrib.open(os.path.join(self.path,'era{0}'.format(i),
+                                        'model_daily_N128_{0}_{1}_z_lnsp.grib'.format(i, j)))
                 # create space for fields
                 T = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
                 u = np.zeros((last_day*4,60,len(lat),len(lon)),dtype = float)
@@ -517,11 +519,12 @@ class erai:
                 counter_message = 1 # first message is z, second is lnsp
                 while (counter_message <= last_day*4*2):
                     key_z_lnsp = grib_z_lnsp.message(counter_message)
-                    z[counter_message-1,:,:] = key_z_lnsp.values
+                    z[counter_time,:,:] = key_z_lnsp.values
                     counter_message += 1
                     key_z_lnsp = grib_z_lnsp.message(counter_message)
-                    lnsp[counter_message-1,:,:] = key_z_lnsp.values
+                    lnsp[counter_time,:,:] = key_z_lnsp.values
                     counter_message += 1
+                    counter_time += 1
                 grib_z_lnsp.close()
                 # get time dimension
                 time = np.arange(last_day*4)
