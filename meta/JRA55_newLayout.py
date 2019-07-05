@@ -19,6 +19,10 @@ Description     : This module aims to load fields from the standard GRIB files
 
                   The processing unit is monthly data, for the sake of memory saving.
 
+                  !! This module is the same as JRA55.py, but it intends to deal with JRA55 data with
+                  different layout, specifically for surface variables. Starting from 2014, this script
+                  should be used. Changes are made for loading surface variables.
+
 Return Values   : netCDF files
 Caveat!         : This module is designed to work with a batch of files. Hence, there is
                   pre-requists for the location and arrangement of data. The folder should
@@ -50,6 +54,7 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                           ...
                           /anl_surf.001_pres.reg_tl319.2016010100_2016013118
                           ...
+
                   Please use the default names after downloading from NCAR/UCAR Research
                   Data Archive. The files are in GRIB format. It is highly recommended to
                   use the data on native grid, which is on N160 Regualr Gaussian Grid.
@@ -208,8 +213,6 @@ class jra55:
         vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of divergent corrected winds
         for i in year:
-            # set the message counter for the extraction of surface field
-            counter_surface = 0
             for j in month:
                 logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
                 # retrieve the keys of input files
@@ -329,17 +332,15 @@ class jra55:
                 key_30d_vgrd.close()
                 key_30d_spfh.close()
                 # surface pressure
-                key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                          'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
+                key_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                          'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
-                    key_sp = key_sp_year.message(counter_surface + counter_message)
+                    key_sp = key_sp_month.message(counter_message)
                     sp[counter_message-1,:,:] = key_sp.values
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_sp_year.close()
-                # renew the surface counter for next loop (a new month)
-                counter_surface = counter_surface + counter_message - 1
+                key_sp_month.close()
                 ############################################################################
                 #####              Retrieve variables for the tendency terms           #####
                 ############################################################################
@@ -359,13 +360,13 @@ class jra55:
                             q_last[counter_lev,:,:] = key_last_q.values
                             counter_lev = counter_lev + 1
                         key_last_spfh.close()
-                        key_last_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                       'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i-1,i-1)))
-                        message_last_sp = key_last_sp_year.messages # get the number of messages in that file
+                        key_last_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                       'anl_surf.001_pres.reg_tl319.{0}120100_{1}123118'.format(i-1,i-1)))
+                        message_last_sp = key_last_sp_month.messages # get the number of messages in that file
                          # message starts from 1
-                        key_last_sp = key_last_sp_year.message(message_last_sp)
+                        key_last_sp = key_last_sp_month.message(message_last_sp)
                         sp_last = key_last_sp.values
-                        key_last_sp_year.close()
+                        key_last_sp_month.close()
                     except: # year out of span, not available
                         print("This is the first year!")
                         q_last = q[0,:,:,:]
@@ -379,11 +380,16 @@ class jra55:
                         q_next[counter_lev,:,:] = key_next_q.values
                         counter_lev = counter_lev + 1
                     key_next_spfh.close()
-                    key_next_sp_year =  pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                    'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_next_sp = key_next_sp_year.message(counter_surface+1)
+                    # check the number of days in Feb
+                    if i in leap_year_list:
+                        next_month_last_day = 29
+                    else:
+                        next_month_last_day = 28
+                    key_next_sp_month =  pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                    'anl_surf.001_pres.reg_tl319.{0}020100_{1}02{2}18'.format(i,i,next_month_last_day)))
+                    key_next_sp = key_next_sp_month.message(1)
                     sp_next = key_next_sp.values
-                    key_next_sp_year.close()
+                    key_next_sp_month.close()
                 elif j == 12:
                     # last month
                     key_last_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
@@ -395,11 +401,12 @@ class jra55:
                         q_last[counter_lev,:,:] = key_last_q.values
                         counter_lev = counter_lev + 1
                     key_last_spfh.close()
-                    key_last_sp_year =  pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                    'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_last_sp = key_last_sp_year.message(counter_surface - last_day*4)
+                    key_last_sp_month =  pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                    'anl_surf.001_pres.reg_tl319.{0}110100_{1}113018'.format(i,i)))
+                    message_last_sp = key_last_sp_month.messages
+                    key_last_sp = key_last_sp_month.message(message_last_sp)
                     sp_last = key_last_sp.values
-                    key_last_sp_year.close()
+                    key_last_sp_month.close()
                     # next month
                     try:
                         key_next_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i+1),
@@ -410,11 +417,11 @@ class jra55:
                             q_next[counter_lev,:,:] = key_next_q.values
                             counter_lev = counter_lev + 1
                         key_next_spfh.close()
-                        key_next_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                                       'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i+1,i+1)))
-                        key_next_sp = key_next_sp_year.message(1)
+                        key_next_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                       'anl_surf.001_pres.reg_tl319.{0}010100_{1}013118'.format(i+1,i+1)))
+                        key_next_sp = key_next_sp_month.message(1)
                         sp_next = key_next_sp.values
-                        key_next_sp_year.close()
+                        key_next_sp_month.close()
                     except: # year exceed the span, not available
                         print("This is the last year!")
                         q_next = q[-1,:,:,:]
@@ -423,6 +430,7 @@ class jra55:
                     # check the number of days in last month
                     j_last = j-1
                     j_next = j+1
+                    # last month
                     if j_last in long_month_list:
                         last_month_last_day = 31
                     elif j_last == 2:
@@ -432,6 +440,16 @@ class jra55:
                             last_month_last_day = 28
                     else:
                         last_month_last_day = 30
+                    # next month
+                    if j_next in long_month_list:
+                        next_month_last_day = 31
+                    elif j_next == 2:
+                        if i in leap_year_list:
+                            next_month_last_day = 29
+                        else:
+                            next_month_last_day = 28
+                    else:
+                        next_month_last_day = 30
                     key_last_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
                                                 'anl_mdl.051_spfh.reg_tl319.{0}{1}2100_{2}{3}{4}18'.format(i,namelist_month[j_last-1],i,namelist_month[j_last-1],last_month_last_day)))
                     key_next_spfh = pygrib.open(os.path.join(self.path,'jra{0}'.format(i),
@@ -446,13 +464,18 @@ class jra55:
                         counter_lev = counter_lev + 1
                     key_next_spfh.close()
                     key_last_spfh.close()
-                    key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                              'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
-                    key_last_sp = key_sp_year.message(counter_surface - last_day*4)
-                    key_next_sp = key_sp_year.message(counter_surface+1)
+                    key_last_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                    'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j_last-1],i,namelist_month[j_last-1],last_month_last_day)))
+                    message_last_sp = key_last_sp_month.messages # get the number of messages in that file
+                    # message starts from 1
+                    key_last_sp = key_last_sp_month.message(message_last_sp)
                     sp_last = key_last_sp.values
+                    key_last_sp_month.close()
+                    key_next_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                                    'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j_next-1],i,namelist_month[j_next-1],next_month_last_day)))
+                    key_next_sp = key_next_sp_month.message(1)
                     sp_next = key_next_sp.values
-                    key_sp_year.close()
+                    key_next_sp_month.close()
                 ############################################################################
                 #####            Conduct mass correction based on continuity           #####
                 ############################################################################
@@ -540,7 +563,6 @@ class jra55:
         uv2_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of AMET
         for i in year:
-            counter_surface = 0
             for j in month:
                 logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
                 # determine how many days are there in a month
@@ -689,17 +711,15 @@ class jra55:
                 key_30d_vgrd.close()
                 key_30d_spfh.close()
                 # surface pressure
-                key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                         'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
+                key_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                           'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
-                    key_sp = key_sp_year.message(counter_surface + counter_message)
+                    key_sp = key_sp_month.message(counter_message)
                     sp[counter_message-1,:,:] = key_sp.values
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_sp_year.close()
-                # renew the surface counter for next loop (a new month)
-                counter_surface = counter_surface + counter_message - 1
+                key_sp_month.close()
                 logging.info("Get the keys of all the required variables for {}(y)-{}(m)".format(i, j))
                 # get time dimension
                 time = np.arange(last_day*4)
@@ -773,7 +793,6 @@ class jra55:
         uv2_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of AMET
         for i in year:
-            counter_surface = 0
             for j in month:
                 logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
                 # determine how many days are there in a month
@@ -826,17 +845,15 @@ class jra55:
                 ############################################################################
                 sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
                                 # surface pressure
-                key_sp_year = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                         'anl_surf.001_pres.reg_tl319.{0}010100_{1}123118'.format(i,i)))
+                key_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
+                                         'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
-                    key_sp = key_sp_year.message(counter_surface + counter_message)
+                    key_sp = key_sp_month.message(counter_message)
                     sp[counter_message-1,:,:] = key_sp.values
                     counter_message = counter_message + 1
                 # close all the grib files
-                key_sp_year.close()
-                # renew the surface counter for next loop (a new month)
-                counter_surface = counter_surface + counter_message - 1
+                key_sp_month.close()
                 ############################################################################
                 ####          calculate energy transport for the first 10 days          ####
                 ############################################################################

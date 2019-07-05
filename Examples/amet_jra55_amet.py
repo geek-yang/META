@@ -10,7 +10,8 @@ from netCDF4 import Dataset
 import os
 import platform
 #import statistics
-import meta.JRA55
+import meta.JRA55 # for 1979-2013
+import meta.JRA55_newLayout # for 2014 onward
 
 print (platform.architecture())
 print (os.path)
@@ -26,7 +27,7 @@ if __name__=="__main__":
     uvc_path = "/home/lwc16308/reanalysis/JRA55/output/SH/jra_model_subdaily_2005_2005_uvc_point.nc"
     #####################################################################################
     print ('*********************** call functions *************************')
-    instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
-    #instance.massCorrect(2005,2005,example)
+    #instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
+    instance = meta.JRA55_newLayout.jra55(datapath_JRA55, output_path, package_path)
     #instance.amet(1979,2016,uvc_path)
     instance.amet_memoryWise(2005,2005,uvc_path)

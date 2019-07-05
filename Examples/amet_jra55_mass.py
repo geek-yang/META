@@ -11,6 +11,7 @@ import os
 import platform
 #import statistics
 import meta.JRA55
+import meta.JRA55_newLayout
 
 print (platform.architecture())
 print (os.path)
@@ -26,5 +27,6 @@ if __name__=="__main__":
     uvc_path = "/home/lwc16308/reanalysis/JRA55/output/SH/jra_model_subdaily_2005_2005_uvc_point.nc"
     #####################################################################################
     print ('*********************** call functions *************************')
-    instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
+    #instance = meta.JRA55.jra55(datapath_JRA55, output_path, package_path)
+    instance = meta.JRA55_newLayout.jra55(datapath_JRA55, output_path, package_path)
     instance.massCorrect(2001,2015,example)
