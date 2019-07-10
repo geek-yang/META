@@ -265,16 +265,16 @@ class merra2:
                     # get the value of the first day
                     if k == 0:
                         q_start = q[0,:,:,:]
-                        sp_start = sp[0,:,:,:]
+                        sp_start = sp[0,:,:]
                     elif k == days[-1]:
                         q_end = q[-1,:,:,:]
-                        sp_end = sp[-1,:,:,:]
+                        sp_end = sp[-1,:,:]
                     # compute flux terms
                     if method == 'SH':
                         Flux = meta.massBudget.correction_SH()
-                        sp_mean_pool[k,:,:], moisture_flux_u_int_pool[k*8:k*8+8,:,:],
-                        moisture_flux_v_int_pool[k*8:k*8+8,:,:], mass_flux_u_int_pool[k*8:k*8+8,:,:],
-                        mass_flux_v_int_pool[k*8:k*8+8,:,:],
+                        sp_mean_pool[k,:,:], moisture_flux_u_int_pool[k*8:k*8+8,:,:],\
+                        moisture_flux_v_int_pool[k*8:k*8+8,:,:], mass_flux_u_int_pool[k*8:k*8+8,:,:],\
+                        mass_flux_v_int_pool[k*8:k*8+8,:,:],\
                         precipitable_water_int_pool[k,:,:] = Flux.massFlux(q, sp, u, v, A, B, tt, hh, yy, xx)
                     elif method == 'FD':
                         print("still under construction.")
@@ -286,8 +286,6 @@ class merra2:
                 # take the mean for mean terms
                 sp_mean = np.mean(sp_mean_pool,0)
                 precipitable_water = np.mean(precipitable_water_int_pool,0)
-                # take basic shape
-                hh, yy, xx = q_last.shape
                 # regarding the tendency term
                 if j == 1:
                     # last month
@@ -393,11 +391,14 @@ class merra2:
                 ################################################################
                 ######     final step for the mass budget correction      ######
                 ################################################################
+                # take basic shape
+                hh, yy, xx = q_last.shape
                 if method == 'SH':
                     SinkSource = meta.massBudget.correction_SH()
                     moisture_tendency, sp_tendency = SinkSource.massTendency(q_last, q_next, sp_last, sp_next, q_start,
-                                                                             q_end, sp_start, sp_end, A, B, hh, yy, xx)
-                    SinkSource.internc(sp_mean, moisture_flux_u_int_pool,  moisture_flux_v_int_pool,
+                                                                             q_end, sp_start, sp_end, A, B, last_day,
+                                                                             hh, yy, xx)
+                    SinkSource.internc(sp_mean, moisture_flux_u_int_pool, moisture_flux_v_int_pool,
                                        mass_flux_u_int_pool, mass_flux_v_int_pool, precipitable_water,
                                        moisture_tendency, sp_tendency, lat, lon, last_day, self.lat_unit,
                                        self.out_path)

@@ -402,7 +402,7 @@ class correction_SH:
         # calculate the index of pressure levels
         index_level = np.arange(h)
         # calculate the delta pressure for the current month
-        sp = np.mean(sp,0)
+        sp_mean = np.mean(sp,0)
         dp_level = np.zeros((t, h, y, x),dtype = float)
         for i in index_level:
             dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
@@ -419,7 +419,7 @@ class correction_SH:
                mass_flux_v_int, precipitable_water_int
 
     def massTendency(self, q_last, q_next, sp_last, sp_next, q_start, q_end,
-                     sp_start, sp_end, A, B, h, y, x):
+                     sp_start, sp_end, A, B, last_day, h, y, x):
         """
         Compute flux terms in mass correction. The returned values are prepared
         for performing mass budget correction with the use of NCL via spherical harmonics.
@@ -471,7 +471,7 @@ class correction_SH:
 
         return moisture_tendency, sp_tendency
 
-    def internc(sp_mean, moisture_flux_u_int, moisture_flux_v_int, mass_flux_u_int,
+    def internc(self, sp_mean, moisture_flux_u_int, moisture_flux_v_int, mass_flux_u_int,
                 mass_flux_v_int, precipitable_water_int, moisture_tendency, sp_tendency,
                 lat, lon, last_day, lat_unit, out_path):
         """
