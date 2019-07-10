@@ -391,7 +391,7 @@ class erai:
                                          v[:,:,::-1,:], q_last[:,::-1,:], q_next[:,::-1,:],
                                          sp_last[::-1,:], sp_next[::-1,:], A, B,
                                          len(time), len(level), len(lat), len(lon), lat, lon,
-                                         last_day, self.lat_unit, self.out_path, self.package_path)
+                                         last_day, self.lat_unit, self.out_path)
                     del u, v, q, sp # save memory
                     # call bash to execute ncl script via subprocess
                     uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
@@ -532,7 +532,7 @@ class erai:
                 sp = np.exp(lnsp)
                 print ('Calculate geopotential height on each model level.')
                 z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
-                                       len(level), len(lat), len(lon))
+                                       len(level), len(lat), len(lon)) # it is gz already
                 logging.info("Extracting variables successfully!")
                 AMET = meta.amet.met()
                 E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:], uv2[j-1,:,:],\

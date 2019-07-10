@@ -22,9 +22,9 @@ Caveat!         : This module is designed to work with a batch of files. Hence, 
                   pre-requists for the location and arrangement of data. The folder should
                   have the following structure:
                   /MERRA2
-                      /merra1979
-                          /MERRA2_200.inst3_3d_asm_Nv.19790101.nc4.nc
-                          /MERRA2_200.inst3_3d_asm_Nv.19790102.nc4.nc
+                      /merra1980
+                          /MERRA2_200.inst3_3d_asm_Nv.19800101.nc4.nc
+                          /MERRA2_200.inst3_3d_asm_Nv.19800102.nc4.nc
                           ...
 
                   Please use the default names after downloading from NASA.
@@ -119,7 +119,7 @@ class merra2:
             1.197030e-01, 8.934502e-02, 6.600001e-02, 4.758501e-02, 3.270000e-02, 2.000000e-02,
             1.000000e-02,],dtype=float)
             # reverse A
-        A = A[::-1]
+        A = A[::-1] * 100 # change unit to Pa
             # the unit of B is 1!!!!!!!!!!!!
             # from surfac eto TOA
         B = np.array([
@@ -192,8 +192,6 @@ class merra2:
                         '21','22','23','24','25','26','27','28','29','30',
                         '31']
         # index of months
-        period = np.arange(start_year,end_year+1,1)
-        index_month = np.arange(1,13,1)
         index_days_long = np.arange(31)
         index_days_short = np.arange(30)
         index_days_Feb_short = np.arange(28)
@@ -213,8 +211,11 @@ class merra2:
         vc_pool = np.zeros((len(year),len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of divergent corrected winds
         # loop for calculation
-        for i in period:
-            for j in index_month:
+        for i in year:
+            ###################################################################
+            ######                   begin the month loop                ######
+            ###################################################################
+            for j in month:
                 # determine how many days are there in a month
                 if j in long_month_list:
                     days = index_days_long
@@ -225,84 +226,198 @@ class merra2:
                         days = index_days_Feb_short
                 else:
                     days = index_days_short
+                last_day = len(days)
+                # create space for mass budget correction variables
+                sp_mean_pool = np.zeros((len(days),len(lat),len(lon)), dtype=float)
+                moisture_flux_u_int_pool = np.zeros((len(days)*8,len(lat),len(lon)), dtype=float)
+                moisture_flux_v_int_pool = np.zeros((len(days)*8,len(lat),len(lon)), dtype=float)
+                mass_flux_u_int_pool = np.zeros((len(days)*8,len(lat),len(lon)), dtype=float)
+                mass_flux_v_int_pool = np.zeros((len(days)*8,len(lat),len(lon)), dtype=float)
+                precipitable_water_int_pool = np.zeros((len(days),len(lat),len(lon)), dtype=float)
+                ###################################################################
+                ######                    begin the day loop                 ######
+                ###################################################################
                 for k in days:
-                    logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(year,namelist_month[month-1],namelist_day[day]))
+                    logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(i,namelist_month[j-1],namelist_day[k]))
                     if year < 1992:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
                     elif year < 2001:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
                     elif year < 2011:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
                     else:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(year) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(year,namelist_month[month-1],namelist_day[day])
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
                     # get the variable keys
                     var_key = Dataset(datapath_var)
                     # The shape of each variable is (8,72,361,576)
-                    logging.info("Retrieving variables for from {0} (y) - {1} (m) - {2} (d) successfully!".format(year,namelist_month[month-1],namelist_day[day]))
-
-
-
-                            datapath_q_last = datapath_T_q_u_v
-                            datapath_lnsp_last = datapath_z_lnsp
-
-                        if i == year_end:
-                            datapath_q_next = datapath_T_q_u_v
-                            datapath_lnsp_next = datapath_z_lnsp
-                    else:
-
-                    # get all the variables for the mass budget correction
-                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
-                    z_lnsp_key = Dataset(datapath_z_lnsp)
-                    # get the variable keys for the calculation of tendency during mass budget correction
-                    q_last_key = Dataset(datapath_q_last)
-                    q_next_key = Dataset(datapath_q_next)
-                    lnsp_last_key = Dataset(datapath_lnsp_last)
-                    lnsp_next_key = Dataset(datapath_lnsp_next)
-                    logging.info("Get the key of all the required variables for {0}(y)-{1}(m)".format(i, j))
-                    # extract variables
-                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
-                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
-                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
-                    # get time dimension
-                    time = T_q_u_v_key.variables['time'][:]
-                    # extract variables for the calculation of tendency
-                    q_last = q_last_key.variables['q'][-1,:,::-1,:]
-                    q_next = q_next_key.variables['q'][0,:,::-1,:]
-                    lnsp_last = lnsp_last_key.variables['lnsp'][-1,::-1,:]
-                    lnsp_next = lnsp_next_key.variables['lnsp'][0,::-1,:]
-                    # calculate sp
-                    sp = np.exp(lnsp)
-                    sp_last = np.exp(lnsp_last)
-                    sp_next = np.exp(lnsp_next)
-                    del lnsp, lnsp_last, lnsp_next
-                    logging.info("Extract all the required variables for {0}(y)-{1}(m) successfully!".format(i, j))
+                    logging.info("Retrieving variables for from {0} (y) - {1} (m) - {2} (d) successfully!".format(i,namelist_month[j-1],namelist_day[k]))
+                    # get the variable keys
+                    var_key = Dataset(datapath_var)
+                    # get the variabels
+                    # The shape of each variable is (8,72,361,576)
+                    q = var_key.variables['QV'][:]
+                    sp = var_key.variables['PS'][:] #(8,361,576)
+                    u = var_key.variables['U'][:]
+                    v = var_key.variables['V'][:]
+                    # get the basic shape
+                    tt, hh, yy, xx = q.shape
+                    # for the computation of tendency terms in mass correction
+                    # get the value of the first day
+                    if k == 0:
+                        q_start = q[0,:,:,:]
+                        sp_start = sp[0,:,:,:]
+                    elif k == days[-1]:
+                        q_end = q[-1,:,:,:]
+                        sp_end = sp[-1,:,:,:]
+                    # compute flux terms
                     if method == 'SH':
-                        # start the mass correction
-                        SinkSource = meta.massBudget.correction_SH()
-                        SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                        len(time), len(level), len(lat), len(lon), lat, lon,
-                                                        self.lat_unit, self.out_path, self.package_path)
-                        del u, v, q # save memory
-                        # call bash to execute ncl script via subprocess
-                        uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
+                        Flux = meta.massBudget.correction_SH()
+                        sp_mean_pool[k,:,:], moisture_flux_u_int_pool[k*8:k*8+8,:,:],
+                        moisture_flux_v_int_pool[k*8:k*8+8,:,:], mass_flux_u_int_pool[k*8:k*8+8,:,:],
+                        mass_flux_v_int_pool[k*8:k*8+8,:,:],
+                        precipitable_water_int_pool[k,:,:] = Flux.massFlux(q, sp, u, v, A, B, tt, hh, yy, xx)
                     elif method == 'FD':
-                        # start the mass correction
-                        SinkSource = meta.massBudget.correction_FD()
-                        uc, vc = SinkSource.massCorrect(q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                                                    len(time), len(level), len(lat), len(lon), lat, self.lat_unit)
+                        print("still under construction.")
                     else:
                         IOError("Please choose the methods listed in the documentation!")
-                    # save the output to the data pool
-                    uc_pool[i-year_start,j-1,:,:] = uc
-                    vc_pool[i-year_start,j-1,:,:] = vc
+                ###################################################################
+                ######                     end of day loop                   ######
+                ###################################################################
+                # take the mean for mean terms
+                sp_mean = np.mean(sp_mean_pool,0)
+                precipitable_water = np.mean(precipitable_water_int_pool,0)
+                # take basic shape
+                hh, yy, xx = q_last.shape
+                # regarding the tendency term
+                if j == 1:
+                    # last month
+                    try:
+                        if year < 1992:
+                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                        elif year < 2001:
+                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                        elif year < 2011:
+                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                        else:
+                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                        # get the variable key
+                        var_last = Dataset(datapath_last)
+                        sp_last = var_last.variables['PS'][-1,:,:]
+                        q_last = var_last.variables['QV'][-1,:,:,:]
+                    except:
+                        sp_last = sp_start
+                        q_last = q_start
+                    # next month
+                    if year < 1992:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                    elif year < 2001:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                    elif year < 2011:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                    else:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                    # get the variable key
+                    var_next = Dataset(datapath_next)
+                    sp_next = var_next.variables['PS'][0,:,:]
+                    q_next = var_next.variables['QV'][0,:,:,:]
+                elif j == 12:
+                    # last month
+                    if year < 1992:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                    elif year < 2001:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                    elif year < 2011:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                    else:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                    # get the variable key
+                    var_last = Dataset(datapath_last)
+                    sp_last = var_last.variables['PS'][-1,:,:]
+                    q_last = var_last.variables['QV'][-1,:,:,:]
+                    # next month
+                    try:
+                        if year < 1992:
+                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                        elif year < 2001:
+                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                        elif year < 2011:
+                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                        else:
+                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                        # get the variable key
+                        var_next = Dataset(datapath_next)
+                        sp_next = var_next.variables['PS'][0,:,:]
+                        q_next = var_next.variables['QV'][0,:,:,:]
+                    except:
+                        sp_next = sp_end
+                        q_next = q_end
+                else:
+                    # check the number of days in last month
+                    j_last = j-1
+                    j_next = j+1
+                    if j_last in long_month_list:
+                        last_month_last_day = 31
+                    elif j_last == 2:
+                        if i in leap_year_list:
+                            last_month_last_day = 29
+                        else:
+                            last_month_last_day = 28
+                    else:
+                        last_month_last_day = 30
+                    # last month
+                    if year < 1992:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                    elif year < 2001:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                    elif year < 2011:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                    else:
+                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                    # get the variable key
+                    var_last = Dataset(datapath_last)
+                    sp_last = var_last.variables['PS'][-1,:,:]
+                    q_last = var_last.variables['QV'][-1,:,:,:]
+                    # next month
+                    if year < 1992:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                    elif year < 2001:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                    elif year < 2011:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                    else:
+                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                    # get the variable key
+                    var_next = Dataset(datapath_next)
+                    sp_next = var_next.variables['PS'][0,:,:]
+                    q_next = var_next.variables['QV'][0,:,:,:]
+                ################################################################
+                ######     final step for the mass budget correction      ######
+                ################################################################
+                if method == 'SH':
+                    SinkSource = meta.massBudget.correction_SH()
+                    moisture_tendency, sp_tendency = SinkSource.massTendency(q_last, q_next, sp_last, sp_next, q_start,
+                                                                             q_end, sp_start, sp_end, A, B, hh, yy, xx)
+                    SinkSource.internc(sp_mean, moisture_flux_u_int_pool,  moisture_flux_v_int_pool,
+                                       mass_flux_u_int_pool, mass_flux_v_int_pool, precipitable_water,
+                                       moisture_tendency, sp_tendency, lat, lon, last_day, self.lat_unit
+                                       self.out_path)
+                    # call bash to execute ncl script via subprocess
+                    uc, vc = SinkSource.massCorrect(self.out_path, self.package_path, method='FG')
+                elif method == 'FD':
+                    print("still under construction.")
+                else:
+                    IOError("Please choose the methods listed in the documentation!")
+                # save the output to the data pool
+                uc_pool[i-year_start,j-1,:,:] = uc
+                vc_pool[i-year_start,j-1,:,:] = vc
+            ###################################################################
+            ######                  end of the month loop                ######
+            ###################################################################
             # export output as netCDF files
             packing = meta.saveNetCDF.savenc()
-            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path)
-        else:
-            IOError("Please follow the naming rule as described in the documentation!")
+            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path, name='MERRA2')
 
-    def amet(self, year_start, year_end, path_uvc):
+    def amet_memoryWise(self, year_start, year_end, path_uvc):
         """
         Quantify Meridional Energy Transport.
         param year_start: the starting time for the calculation
@@ -324,6 +439,20 @@ class merra2:
         year = np.arange(year_start, year_end+1, 1)
         month = np.arange(1, 13, 1)
         #month_index = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12' ]
+        # date and time arrangement
+        # namelist of month and days for file manipulation
+        namelist_month = ['01','02','03','04','05','06','07','08','09','10','11','12']
+        namelist_day = ['01','02','03','04','05','06','07','08','09','10',
+                        '11','12','13','14','15','16','17','18','19','20',
+                        '21','22','23','24','25','26','27','28','29','30',
+                        '31']
+        # index of months
+        index_days_long = np.arange(31)
+        index_days_short = np.arange(30)
+        index_days_Feb_short = np.arange(28)
+        index_days_Feb_long = np.arange(29)
+        long_month_list = np.array([1,3,5,7,8,10,12])
+        leap_year_list = np.array([1976,1980,1984,1988,1992,1996,2000,2004,2008,2012,2016,2020])
         # define sigma level
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
@@ -337,7 +466,6 @@ class merra2:
         level = (half_level[1:] + half_level[:-1]) / 2
         # create space for the output
         # the number at the end of each name indicates the integral
-        # from surface to a certain height (hPa)
         # the results will be saved per year to save memory
         # AMET in the entire column
         E = np.zeros((len(month),len(lat),len(lon)), dtype=float)
@@ -352,47 +480,93 @@ class merra2:
         gz_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         uv2_c = np.zeros((len(month),len(lat),len(lon)), dtype=float)
         # loop for the computation of AMET
-        if fields == 1:
-            for i in year:
-                for j in month:
-                    logging.info("Start retrieving variables for {0}(y)-{1}(m)".format(i, j))
-                    datapath_T_q_u_v = os.path.join(self.path,'era{0}'.format(i),
-                                                'model_daily_075_{0}_{1}_T_q_u_v.nc'.format(i, j))
-                    datapath_z_lnsp = os.path.join(self.path,'era{0}'.format(i),
-                                                'model_daily_075_{0}_{1}_z_lnsp.nc'.format(i, j))
-                    # get all the variables for the mass budget correction
-                    T_q_u_v_key = Dataset(datapath_T_q_u_v)
-                    z_lnsp_key = Dataset(datapath_z_lnsp)
-                    logging.info("Get the keys of all the required variables for {0}(y)-{1}(m)".format(i, j))
-                    # extract variables
-                    T = T_q_u_v_key.variables['t'][:,:,::-1,:]
-                    q = T_q_u_v_key.variables['q'][:,:,::-1,:]
-                    lnsp = z_lnsp_key.variables['lnsp'][:,::-1,:]
-                    z = z_lnsp_key.variables['z'][:,::-1,:]
-                    u = T_q_u_v_key.variables['u'][:,:,::-1,:]
-                    v = T_q_u_v_key.variables['v'][:,:,::-1,:]
-                    # get time dimension
-                    time = T_q_u_v_key.variables['time'][:]
-                    #level = T_q_key.variables['level'][:]
-                    # calculate sp
-                    sp = np.exp(lnsp)
-                    # calculate geopotential
+        for i in year:
+            ###################################################################
+            ######                   begin the month loop                ######
+            ###################################################################
+            for j in month:
+                # determine how many days are there in a month
+                if j in long_month_list:
+                    days = index_days_long
+                elif j == 2:
+                    if i in leap_year_list:
+                        days = index_days_Feb_long
+                    else:
+                        days = index_days_Feb_short
+                else:
+                    days = index_days_short
+                last_day = len(days)
+                # create space for the output
+                E_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                cpT_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                Lvq_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                gz_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                uv2_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+
+                E_c_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                cpT_c_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                Lvq_c_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                gz_c_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                uv2_c_day = np.zeros((last_day,len(lat),len(lon)), dtype=float)
+                ###################################################################
+                ######                    begin the day loop                 ######
+                ###################################################################
+                for k in days:
+                    logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(i,namelist_month[j-1],namelist_day[k]))
+                    if year < 1992:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                    elif year < 2001:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                    elif year < 2011:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                    else:
+                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                    # get the variable keys
+                    var_key = Dataset(datapath_var)
+                    # The shape of each variable is (8,72,361,576)
+                    logging.info("Retrieving variables for from {0} (y) - {1} (m) - {2} (d) successfully!".format(i,namelist_month[j-1],namelist_day[k]))
+                    # get the variable keys
+                    var_key = Dataset(datapath_var)
+                    # compute gz
+                    z_model = self.calc_gz(var_key)
                     print ('Calculate geopotential height on each model level.')
-                    z_model = self.calc_gz(T, q, sp, z, A, B, len(time),
-                                           len(level), len(lat), len(lon))
+                    # get the variabels
+                    # The shape of each variable is (8,72,361,576)
+                    T = var_key.variables['T'][:]
+                    q = var_key.variables['QV'][:]
+                    sp = var_key.variables['PS'][:] #(8,361,576)
+                    u = var_key.variables['U'][:]
+                    v = var_key.variables['V'][:]
                     logging.info("Extracting variables successfully!")
+                    # get the basic shape
+                    tt, hh, yy, xx = q.shape
                     AMET = meta.amet.met()
-                    E[j-1,:,:], cpT[j-1,:,:], Lvq[j-1,:,:], gz[j-1,:,:],\
-                    uv2[j-1,:,:], E_c[j-1,:,:], cpT_c[j-1,:,:], Lvq_c[j-1,:,:],\
-                    gz_c[j-1,:,:], uv2_c[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, z_model[:,:,::-1,:],
-                                                                  A, B, len(time), len(level),
-                                                                  len(lat), len(lon), lat,
-                                                                  self.lat_unit, vc[i-year_start,j-1,:,:])
-                # save output as netCDF files
-                packing = meta.saveNetCDF.savenc()
-                packing.ncAMET(E, cpT, Lvq, gz, uv2,
-                               E_c, cpT_c, Lvq_c, gz_c, uv2_c,
-                               i, level, lat, lon, self.out_path)
+                    E_day[j-1,:,:], cpT_day[j-1,:,:], Lvq_day[j-1,:,:], gz_day[j-1,:,:],\
+                    uv2_day[j-1,:,:], E_c_day[j-1,:,:], cpT_c_day[j-1,:,:], Lvq_c_day[j-1,:,:],\
+                    gz_c_day[j-1,:,:], uv2_c_day[j-1,:,:] = AMET.calc_met(T, q, sp, u, v, z_model[:,:,::-1,:],
+                                                                          A, B, tt, hh, len(lat), len(lon), lat,
+                                                                          self.lat_unit, vc[i-year_start,j-1,:,:])
+                ###################################################################
+                ######                     end of day loop                   ######
+                ###################################################################
+                E[j-1,:,:] = np.mean(E_day,0)
+                cpT[j-1,:,:] = np.mean(cpT_day,0)
+                Lvq[j-1,:,:] = np.mean(Lvq_day,0)
+                gz[j-1,:,:] = np.mean(gz_day,0)
+                uv2[j-1,:,:] = np.mean(uv2_day,0)
+                E_c[j-1,:,:] = np.mean(E_c_day,0)
+                cpT_c[j-1,:,:] = np.mean(cpT_c_day,0)
+                Lvq_c[j-1,:,:] = np.mean(Lvq_c_day,0)
+                gz_c[j-1,:,:] = np.mean(gz_c_day,0)
+                uv2_c[j-1,:,:] = np.mean(uv2_c_day,0)
+            ###################################################################
+            ######                  end of the month loop                ######
+            ###################################################################
+            # save output as netCDF files
+            packing = meta.saveNetCDF.savenc()
+            packing.ncAMET(E, cpT, Lvq, gz, uv2, E_c, cpT_c,
+                           Lvq_c, gz_c, uv2_c, i, level,
+                           lat, lon, self.out_path, name='MERRA2')
         else:
             IOError("Please follow the naming rule as described in the documentation!")
 
@@ -417,7 +591,7 @@ class merra2:
         lon = example_key.variables['longitude'][:]
         level = example_key.variables['level'][:]
 
-    def calc_gz(self, T, q, sp, z, A, B, t, h, y, x):
+    def calc_gz(self, var_key):
         """
         Calculate geopotential on sigma levels.
         The method is given in ECMWF IFS 9220, from section 2.20 - 2.23.
@@ -439,6 +613,13 @@ class merra2:
         logging.info("Start the computation of geopotential on model level.")
         # call the function to generate contants
         constant = self.setConstants()
+        # extract variables
+        T = var_key.variables['T'][:]
+        q = var_key.variables['QV'][:]
+        sp = var_key.variables['PS'][:]
+        z = var_key.variables['PHIS'][:]
+        # basic dimension
+        t, h, y, x = T.shape
         # define the half level pressure matrix
         p_half_plus = np.zeros((t, h, y, x),dtype = float)
         p_half_minus = np.zeros((t, h, y, x),dtype = float)
@@ -446,7 +627,7 @@ class merra2:
         index_level = np.arange(h)
         # calculate the pressure at each half level
         for i in index_level:
-            p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp
+            p_half_plus[:,i,:,:] = A[i+1] + B[i+1] * sp # A is Pa already
             p_half_minus[:,i,:,:] = A[i] + B[i] * sp
         # calculate full pressure level
         #level_full = (p_half_plus + p_half_minus) / 2

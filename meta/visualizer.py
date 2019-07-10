@@ -6,8 +6,8 @@ Author          : Yang Liu (y.liu@esciencecenter.nl)
 First Built     : 2018.08.13
 Last Update     : 2018.08.13
 Contributor     :
-Description     : This module provides several methods to perform statistical
-                  analysis on MET and all kinds of fields.
+Description     : This module provides several methods to visualize
+                  MET and all kinds of fields.
 Return Values   : pngs
 Caveat!         :
 """
@@ -32,7 +32,7 @@ class plots:
         """
         This module will make a x-y plot to display the correlation coefficient
         got from the linear regression.
-        
+
         param xaxis: latitude for the plot as x axis
         param corr: the correlation coefficient
         param figname: name and output path of figure
@@ -48,24 +48,24 @@ class plots:
         plt.show()
         fig.savefig(figname,dpi=300)
         plt.close(fig)
-        
+
     @staticmethod
     def vertProfile(xaxis, yaxis, corr, p_value, label,
                     ticks, figname='./VerticalProfile', ttest=False):
         """
         This module helps to create a plot to show the vertical profile of fields
         after regression.
-        
+
         param xaxis: latitude for the plot as x axis
         param yaxis: level for the plot as y axis
         param corr: the correlation coefficient
         param figname: name and output path of figure
         return: Figures
-        rtype: png        
+        rtype: png
         """
         print ("Create contour plot of correlation coefficient for vertical profiles.")
         # make plots
-        fig = plt.figure(figsize=(6.5,5.4))        
+        fig = plt.figure(figsize=(6.5,5.4))
         cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
         cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
                             shrink =0.8, pad=0.135, format="%.1f")
@@ -82,25 +82,25 @@ class plots:
         plt.show()
         fig.savefig(figname,dpi=300)
         plt.close(fig)
-        
+
     @staticmethod
     def vertProfileSig(xaxis, yaxis, corr, p_value, label,
                        ticks, figname='./VerticalProfile', ttest=False):
         """
         This module helps to create a plot to show the vertical profile of fields
         after regression. It also includes the full contour of confidence interval.
-        
+
         param xaxis: latitude for the plot as x axis
         param yaxis: level for the plot as y axis
         param corr: the correlation coefficient
         param figname: name and output path of figure
         return: Figures
-        rtype: png        
+        rtype: png
         """
         print ("Create contour plot of correlation coefficient for vertical profiles.")
         # make plots
         contour_level = [i for i in np.arange(0,1.1, 0.1)]
-        fig = plt.figure(figsize=(6.5,5.4))        
+        fig = plt.figure(figsize=(6.5,5.4))
         cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
         cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
                             shrink =0.8, pad=0.135, format="%.1f")
@@ -117,23 +117,23 @@ class plots:
         plt.show()
         fig.savefig(figname,dpi=300)
         plt.close(fig)
-    
+
     def vertProfileOverlap(xaxis, yaxis, corr, cont, p_value, label,
                            ticks, contour_level, inline_space,
                            figname='./VerticalProfile', ttest=False):
         """
         This module helps to create a plot to show the vertical profile of fields
         after regression. It also includes the full contour of stokes stream function.
-        
+
         param xaxis: latitude for the plot as x axis
         param yaxis: level for the plot as y axis
         param corr: the correlation coefficient
         param figname: name and output path of figure
         return: Figures
-        rtype: png        
+        rtype: png
         """
         print ("Create contour plot of stokes stream function for vertical profiles.")
-        fig = plt.figure(figsize=(6.5,5.4))        
+        fig = plt.figure(figsize=(6.5,5.4))
         cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
         cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
                             shrink =0.8, pad=0.135, format="%.1f")
@@ -147,20 +147,20 @@ class plots:
         plt.ylabel("Level (hPa)")
         contour = plt.contour(xaxis, yaxis, cont,
                               contour_level, colors='k', linewidths = 0.9, alpha=0.6)
-        plt.clabel(contour, inline=inline_space, fontsize=8, fmt = '%1.1f')        
+        plt.clabel(contour, inline=inline_space, fontsize=8, fmt = '%1.1f')
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
         fig.savefig(figname,dpi=300)
         plt.close(fig)
-        
-    @staticmethod    
+
+    @staticmethod
     def leadlagRegress(yaxis, corr, lag, p_value, figname='./LeadLagRegression.png',
                        ttest=False):
         """
         This module will make a contour plot to display the correlation coefficient
         got from the lead/lag regression.
-        
+
         param yaxis: latitude for the plot as y axis
         param corr: the correlation coefficient
         param lag: the maximum lag time for plot as x axis
@@ -189,7 +189,7 @@ class plots:
         plt.show()
         fig.savefig(figname,dpi=300)
         plt.close(fig)
-    
+
     @staticmethod
     def geograph(latitude, longitude, field, p_value, label, ticks,
                  figname='./NorthPolar.png', gridtype='geographical',
@@ -198,7 +198,7 @@ class plots:
         This module will make a geographical plot to give a spatial view of fields.
         This module is built on iris and cartopy for the visualization of fields on
         both geographical and curvilinear grid.
-        
+
         param lat: latitude coordinate for plot
         param lon: longitude coordinate for plot
         param field: input field for visualization
@@ -222,7 +222,7 @@ class plots:
             lon_iris = iris.coords.DimCoord(longitude, standard_name='longitude', long_name='longitude',
                                             var_name='lon', units='degrees')
             # assembly the cube
-            cube_iris = iris.cube.Cube(field, long_name='geographical field', var_name='field', 
+            cube_iris = iris.cube.Cube(field, long_name='geographical field', var_name='field',
                                        units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
             if boundary == 'northhem':
                 fig = plt.figure()
@@ -275,7 +275,7 @@ class plots:
                                s=0.1, c='g',alpha=0.3)
                 iplt.show()
                 fig.savefig(figname, dpi=300)
-                plt.close(fig)                
+                plt.close(fig)
             else:
                 print ('This boundary is not supported by the module. Please check the documentation.')
         elif gridtype == 'curvilinear':
@@ -286,7 +286,7 @@ class plots:
             lon_iris = iris.coords.AuxCoord(longitude, standard_name='longitude', long_name='longitude',
                                             var_name='lon', units='degrees')
             # assembly the cube
-            cube_iris = iris.cube.Cube(field, long_name='curvilinear field', var_name='field', 
+            cube_iris = iris.cube.Cube(field, long_name='curvilinear field', var_name='field',
                                        units='1', aux_coords_and_dims=[(lat_iris, (0,1)), (lon_iris, (0,1))])
             coord_sys = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
             cube_iris.coord('latitude').coord_system = coord_sys
@@ -349,9 +349,8 @@ class plots:
                 #           s=0.1, c='g',alpha=0.3)
                 iplt.show()
                 fig.savefig(figname, dpi=300)
-                plt.close(fig)                
+                plt.close(fig)
             else:
-                print ('This boundary is not supported by the module. Please check the documentation.')                
+                print ('This boundary is not supported by the module. Please check the documentation.')
         else:
             raise IOError("This module only support fields on geographical or curvilinear grid!")
-            

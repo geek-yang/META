@@ -8,7 +8,7 @@ Last Update     : 2018.08.14
 Contributor     :
 Description     : This module provides several methods to perform statistical
                   analysis on MET and all kinds of fields.
-Return Values   : pngs
+Return Values   : numpy arrays
 Caveat!         :
 """
 
@@ -87,9 +87,9 @@ class operator:
                 raise IOError("This module can not work with any array with a \
                               dimension higher than 3!")
         self._anomaly = white_var
-        
+
         print ("The output anomaly time series only contains one dimension for time!")
-        
+
         return self._anomaly
 
     def detrend(self, order=2, obj='anomaly'):
@@ -137,7 +137,7 @@ class operator:
         self._detrend = series - self._polyfit
 
         return self._detrend
-    
+
     def lowpass(self, window=60, obj='anomaly'):
         """
         Apply low pass filter to the time series. The function gives running mean
@@ -156,7 +156,7 @@ class operator:
         elif obj == 'original':
             series = self.var
         elif obj == 'detrend':
-            series = self._detrend        
+            series = self._detrend
         # check the dimension of input
         if series.ndim == 1:
             t = len(series)
@@ -177,9 +177,9 @@ class operator:
             raise IOError("This module can not work with any array with a \
                             dimension higher than 3!")
         self._lowpass = running_mean
-        
+
         return self._lowpass
-    
+
     @staticmethod
     def autoCorr(series):
         """
@@ -194,7 +194,7 @@ class operator:
         auto_corr = np.correlate(series, series, 'full') / series_norm
         # for the return value, we only keep half of them
         return auto_corr[len(auto_corr)//2:]
-    
+
     @staticmethod
     def linearRegress(var_x, var_y, lag=0):
         """
@@ -291,7 +291,7 @@ class operator:
                                             var_x[lag_index[i]:], var_y[:-lag_index[i],j])
                         else:
                             slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(
-                                            var_x[:], var_y[:,j])                
+                                            var_x[:], var_y[:,j])
         elif var_y.ndim == 3 and var_x.ndim == 1:
             print("One time series is regressed on a 2D field.")
             if lag == 0:
@@ -316,12 +316,12 @@ class operator:
                                                                                             var_y[:-lag,i,j])
                         elif lag < 0:
                             slope[i,j], _, r_value[i,j], p_value[i,j], _ = stats.linregress(var_x[:lag],
-                                                                                            var_y[-lag:,i,j])                           
+                                                                                            var_y[-lag:,i,j])
             else:
                 IOError("The lead / lag coefficient should be integers.")
         else:
             IOError("The dimensons of input time series are not supported.")
-        
+
         return slope, r_value, p_value
 
     @staticmethod
@@ -340,7 +340,7 @@ class operator:
         - OND October, November, December
         - SON September, October, November (autumn)
         - MJJ May, June, July
-        - AMJ April, May, June 
+        - AMJ April, May, June
         - MAM March, April, May (spring)
         param Dim_month: A check whether the time series include the dimension of month.
         return: time series
@@ -379,7 +379,7 @@ class operator:
         elif span == 'ASO':
             month_1 = 8
         elif span == 'JAS':
-            month_1 = 7            
+            month_1 = 7
         elif span == 'MJJ':
             month_1 = 5
         elif span == 'AMJ':
@@ -413,7 +413,7 @@ class operator:
             series_season = np.zeros((t//4,y),dtype=float)
             series_season[0::3,:] = series[month_1-1::12,:]
             series_season[1::3,:] = series[month_2-1::12,:]
-            series_season[2::3,:] = series[month_3-1::12,:]        
+            series_season[2::3,:] = series[month_3-1::12,:]
         elif series.ndim == 3:
             t, y, x = series.shape
             series_season = np.zeros((t//4,y,x),dtype=float)
@@ -424,7 +424,7 @@ class operator:
             raise IOError("This module can not work with any array with a \
                            dimension higher than 3!")
         return series_season
-        
+
     @staticmethod
     def interpolation(series, lat_nav, lat_tar, interp_kind='slinear',Dim_month=True):
         """
@@ -466,16 +466,16 @@ class operator:
                     ius = scipy.interpolate.interp1d(lat_nav.data, series[i,:], kind=interp_kind,
                                                      bounds_error=False, fill_value=0.0)
                     interp_series[i,:] = ius(lat_tar.data)
-            
+
         return interp_series
-    
+
     @staticmethod
     def mca(matrix_x, matrix_y):
         """
         Perform Maximum Covariance Analysis (MCA) with given data.
         The MCA is based on Singular Value Decomposition (SVD).
         return: eigenvalues and eigenvectors from Singular Value Decomposition.
-        rtype: numpy.array        
+        rtype: numpy.array
         """
         print ("The input matrix should only have 3 dimensions including time as the first axis.")
         if matrix_x.ndim == 3 and matrix_y.ndim == 3:

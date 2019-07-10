@@ -251,7 +251,7 @@ class correction_SH:
         return constant
 
     def massInter(self, q, sp, u, v, q_last, q_next, sp_last, sp_next, A, B,
-                  t, h, y, x, lat, lon, last_day, lat_unit, out_path, package_path):
+                  t, h, y, x, lat, lon, last_day, lat_unit, out_path):
         """
         First step for performing mass budget correction. It is based on the hypothesis that the
         mass imbalance mainly comes from the baratropic winds. All the divergence and tendency
@@ -371,3 +371,130 @@ class correction_SH:
         vc = temp_uvc_key.variables['vc'][:]
 
         return uc, vc
+
+        ################################################################
+        ## The methods below are all used for a memory saving purpose ##
+        ## The whole procedure of mass budget correction is split     ##
+        ################################################################
+
+    def massFlux(self, q, sp, u, v, A, B, t, h, y, x):
+        """
+        Compute flux terms in mass correction. The returned values are prepared
+        for performing mass budget correction with the use of NCL via spherical harmonics.
+
+        param q: Specific Humidity [kg/kg]
+        param sp: Surface Pressure [Pa]
+        param u: Zonal Wind [m/s]
+        param v: Meridional Wind [m/s]
+        param A: Constant A for Defining Sigma Level
+        param B: Constant B for Defining Sigma Level
+        param t: time dimension of input fields
+        param h: level dimension of input fields
+        param y: latitude dimension of input fields
+        param x: longitude dimension of input fields
+
+        returns: barotropic corrected wind components in meridional (vc)
+                 zonal (uc) direction
+        rtype: numpy array
+        """
+        # create constants
+        constant = self.setConstants()
+        # calculate the index of pressure levels
+        index_level = np.arange(h)
+        # calculate the delta pressure for the current month
+        sp = np.mean(sp,0)
+        dp_level = np.zeros((t, h, y, x),dtype = float)
+        for i in index_level:
+            dp_level[:,i,:,:] =  np.abs((A[i+1] + B[i+1] * sp) - (A[i] + B[i] * sp))
+        # calculte the mean moisture flux for a certain month and take the vertical integral
+        moisture_flux_u_int = np.sum((u * q * dp_level / constant['g']),1)
+        moisture_flux_v_int = np.sum((v * q * dp_level / constant['g']),1)
+        # calculte the mean mass flux for a certain month and take the vertical integral
+        mass_flux_u_int = np.sum((u * dp_level / constant['g']),1)
+        mass_flux_v_int = np.sum((v * dp_level / constant['g']),1)
+        # calculate precipitable water
+        precipitable_water_int = np.mean(np.sum((q * dp_level / constant['g']),1),0)
+
+        return sp_mean, moisture_flux_u_int, moisture_flux_v_int, mass_flux_u_int, \
+               mass_flux_v_int, precipitable_water_int
+
+    def massTendency(self, q_last, q_next, sp_last, sp_next, q_start, q_end,
+                     sp_start, sp_end, A, B, h, y, x):
+        """
+        Compute flux terms in mass correction. The returned values are prepared
+        for performing mass budget correction with the use of NCL via spherical harmonics.
+
+        param q: Specific Humidity [kg/kg]
+        param sp: Surface Pressure [Pa]
+        param u: Zonal Wind [m/s]
+        param v: Meridional Wind [m/s]
+        param A: Constant A for Defining Sigma Level
+        param B: Constant B for Defining Sigma Level
+        param h: level dimension of input fields
+        param y: latitude dimension of input fields
+        param x: longitude dimension of input fields
+
+        returns: barotropic corrected wind components in meridional (vc)
+                 zonal (uc) direction
+        rtype: numpy array
+        """
+        # create constants
+        constant = self.setConstants()
+        # calculate the delta pressure for the tendency terms
+        dp_level_start = np.zeros((h, y, x),dtype = float) # start of the current month
+        dp_level_end = np.zeros((h, y, x),dtype = float) # end of the current month
+        dp_level_last = np.zeros((h, y, x),dtype = float) # last day of the last month
+        dp_level_next = np.zeros((h, y, x),dtype = float) # first day of the next month
+        # calculate the index of pressure levels
+        index_level = np.arange(h)
+        # use matrix A and B to calculate dp based on half pressure level
+        # take absolute value to work for input regardless of their vertical axis
+        for i in index_level:
+            dp_level_start[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_start) -
+                                          (A[i] + B[i] * sp_start))
+            dp_level_end[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_end) -
+                                        (A[i] + B[i] * sp_end))
+            dp_level_last[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_last) -
+                                   (A[i] + B[i] * sp_last))
+            dp_level_next[i,:,:] = np.abs((A[i+1] + B[i+1] * sp_next) -
+                                   (A[i] + B[i] * sp_next))
+        # calculte the precipitable water tendency and take the vertical integral
+        moisture_start = np.sum((q_start * dp_level_start), 0) # start of the current month
+        moisture_end = np.sum((q_end * dp_level_end), 0) # end of the current month
+        moisture_last = np.sum((q_last * dp_level_last), 0) # last day of the last month
+        moisture_next = np.sum((q_next * dp_level_next), 0) # first day of the next month
+        # compute the moisture tendency (one day has 86400s)
+        moisture_tendency = ((moisture_end + moisture_next) / 2 -
+                             (moisture_last + moisture_start) / 2) / (last_day * 86400) / constant['g']
+        # calculate surface pressure tendency
+        sp_tendency = ((sp_end + sp_next) / 2 - (sp_last + sp_start) / 2 ) / (last_day * 86400)
+
+        return moisture_tendency, sp_tendency
+
+    def internc(sp_mean, moisture_flux_u_int, moisture_flux_v_int, mass_flux_u_int,
+                mass_flux_v_int, precipitable_water_int, moisture_tendency, sp_tendency,
+                lat, lon, last_day, lat_unit, out_path):
+        """
+        Pack intermediate variables for performing mass budget correction. All the
+        divergence and tendency terms are saved as netCDF files for the use of NCL
+        via spherical harmonics. All the input files should contain the fields for
+        the entire month.
+        param t: time dimension of input fields
+        param h: level dimension of input fields
+        param y: latitude dimension of input fields
+        param x: longitude dimension of input fields
+        param lat: latitude
+        param lat_unit: number of grid boxes meridionally (to calculate the unit width)
+        param last_day: number of days in this month
+
+        returns: barotropic corrected wind components in meridional (vc)
+                 zonal (uc) direction
+        rtype: numpy array
+        """
+        ########################################################################
+        ##########             output netCDF files for NCL            ##########
+        ########################################################################
+        intermediate_nc = meta.saveNetCDF.savenc()
+        intermediate_nc.ncInterCorrect(sp_mean, moisture_tendency, moisture_flux_u_int,
+                                       moisture_flux_v_int, sp_tendency, mass_flux_u_int,
+                                       mass_flux_v_int, precipitable_water_int, last_day*8, lat, lon, out_path)

@@ -333,7 +333,7 @@ class jra55:
                 key_30d_spfh.close()
                 # surface pressure
                 key_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                          'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                                           'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
                     key_sp = key_sp_month.message(counter_message)
@@ -846,7 +846,7 @@ class jra55:
                 sp = np.zeros((last_day*4,len(lat),len(lon)),dtype = float)
                                 # surface pressure
                 key_sp_month = pygrib.open(os.path.join(self.path, 'jra_surf',
-                                         'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
+                                           'anl_surf.001_pres.reg_tl319.{0}{1}0100_{2}{3}{4}18'.format(i,namelist_month[j-1],i,namelist_month[j-1],last_day)))
                 counter_message = 1
                 while (counter_message <= last_day*4):
                     key_sp = key_sp_month.message(counter_message)

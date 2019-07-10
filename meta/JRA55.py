@@ -466,7 +466,7 @@ class jra55:
                                          v[:,:,::-1,:], q_last[:,::-1,:], q_next[:,::-1,:],
                                          sp_last[::-1,:], sp_next[::-1,:], A, B, len(time),
                                          len(level), len(lat), len(lon), lat, lon, last_day,
-                                         self.lat_unit, self.out_path, self.package_path)
+                                         self.lat_unit, self.out_path)
                     del u, v, q, sp # save memory
                     # call bash to execute ncl script via subprocess
                     uc, vc = SinkSource.massCorrect(self.out_path, self.package_path)
@@ -514,10 +514,10 @@ class jra55:
         A, B = self.defineSigmaLevels()
         # use example input file to load the basic dimensions information
         uvc_key = Dataset(path_uvc)
-        lat = uvc_key['latitude'][:]
-        lon = uvc_key['longitude'][:]
-        #uc = uvc_key['uc'][:]
-        vc = uvc_key['vc'][:]
+        lat = uvc_key.variables['latitude'][:]
+        lon = uvc_key.variables['longitude'][:]
+        #uc = uvc_key.variables['uc'][:]
+        vc = uvc_key.variables['vc'][:]
         # calculate the levels based on A & B and standard surface pressure
         # from surface to TOA
         half_level = A + B * 101325
