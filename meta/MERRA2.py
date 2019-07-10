@@ -240,13 +240,13 @@ class merra2:
                 for k in days:
                     logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(i,namelist_month[j-1],namelist_day[k]))
                     if year < 1992:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     elif year < 2001:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     elif year < 2011:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     else:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     # get the variable keys
                     var_key = Dataset(datapath_var)
                     # The shape of each variable is (8,72,361,576)
@@ -293,13 +293,13 @@ class merra2:
                     # last month
                     try:
                         if year < 1992:
-                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                            datapath_last = os.path.join(self.path, 'merra{0}'.format(i-1), 'MERRA2_100.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1))
                         elif year < 2001:
-                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                            datapath_last = os.path.join(self.path, 'merra{0}'.format(i-1), 'MERRA2_200.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1))
                         elif year < 2011:
-                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                            datapath_last = os.path.join(self.path, 'merra{0}'.format(i-1), 'MERRA2_300.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1))
                         else:
-                            datapath_last = datapath + os.sep + 'merra{0}'.format(i-1) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1)
+                            datapath_last = os.path.join(self.path, 'merra{0}'.format(i-1), 'MERRA2_400.inst3_3d_asm_Nv.{0}1231.nc4.nc'.format(i-1))
                         # get the variable key
                         var_last = Dataset(datapath_last)
                         sp_last = var_last.variables['PS'][-1,:,:]
@@ -309,13 +309,13 @@ class merra2:
                         q_last = q_start
                     # next month
                     if year < 1992:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i))
                     elif year < 2001:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i))
                     elif year < 2011:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i))
                     else:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i)
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}0201.nc4.nc'.format(i))
                     # get the variable key
                     var_next = Dataset(datapath_next)
                     sp_next = var_next.variables['PS'][0,:,:]
@@ -323,13 +323,13 @@ class merra2:
                 elif j == 12:
                     # last month
                     if year < 1992:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i))
                     elif year < 2001:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i))
                     elif year < 2011:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i))
                     else:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}1130.nc4.nc'.format(i))
                     # get the variable key
                     var_last = Dataset(datapath_last)
                     sp_last = var_last.variables['PS'][-1,:,:]
@@ -337,13 +337,13 @@ class merra2:
                     # next month
                     try:
                         if year < 1992:
-                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                            datapath_next = os.path.join(self.path, 'merra{0}'.format(i+1), 'MERRA2_100.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1))
                         elif year < 2001:
-                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                            datapath_next = os.path.join(self.path, 'merra{0}'.format(i+1), 'MERRA2_200.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1))
                         elif year < 2011:
-                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                            datapath_next = os.path.join(self.path, 'merra{0}'.format(i+1), 'MERRA2_300.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1))
                         else:
-                            datapath_next = datapath + os.sep + 'merra{0}'.format(i+1) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1)
+                            datapath_next = os.path.join(self.path, 'merra{0}'.format(i+1), 'MERRA2_400.inst3_3d_asm_Nv.{0}0131.nc4.nc'.format(i+1))
                         # get the variable key
                         var_next = Dataset(datapath_next)
                         sp_next = var_next.variables['PS'][0,:,:]
@@ -366,26 +366,26 @@ class merra2:
                         last_month_last_day = 30
                     # last month
                     if year < 1992:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day))
                     elif year < 2001:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day))
                     elif year < 2011:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day))
                     else:
-                        datapath_last = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day)
+                        datapath_last = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j_last-1],last_month_last_day))
                     # get the variable key
                     var_last = Dataset(datapath_last)
                     sp_last = var_last.variables['PS'][-1,:,:]
                     q_last = var_last.variables['QV'][-1,:,:,:]
                     # next month
                     if year < 1992:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1]))
                     elif year < 2001:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1]))
                     elif year < 2011:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1]))
                     else:
-                        datapath_next = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1])
+                        datapath_next = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}01.nc4.nc'.format(i,namelist_month[j_next-1]))
                     # get the variable key
                     var_next = Dataset(datapath_next)
                     sp_next = var_next.variables['PS'][0,:,:]
@@ -399,7 +399,7 @@ class merra2:
                                                                              q_end, sp_start, sp_end, A, B, hh, yy, xx)
                     SinkSource.internc(sp_mean, moisture_flux_u_int_pool,  moisture_flux_v_int_pool,
                                        mass_flux_u_int_pool, mass_flux_v_int_pool, precipitable_water,
-                                       moisture_tendency, sp_tendency, lat, lon, last_day, self.lat_unit
+                                       moisture_tendency, sp_tendency, lat, lon, last_day, self.lat_unit,
                                        self.out_path)
                     # call bash to execute ncl script via subprocess
                     uc, vc = SinkSource.massCorrect(self.out_path, self.package_path, method='FG')
@@ -514,13 +514,13 @@ class merra2:
                 for k in days:
                     logging.info("Start retrieving variables T,q,u,v,sp,z for from {0} (y) - {1} (m) - {2} (d) ".format(i,namelist_month[j-1],namelist_day[k]))
                     if year < 1992:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_100.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     elif year < 2001:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_200.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     elif year < 2011:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_300.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     else:
-                        datapath_var = datapath + os.sep + 'merra{0}'.format(i) + os.sep + 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k])
+                        datapath_var = os.path.join(self.path, 'merra{0}'.format(i), 'MERRA2_400.inst3_3d_asm_Nv.{0}{1}{2}.nc4.nc'.format(i,namelist_month[j-1],namelist_day[k]))
                     # get the variable keys
                     var_key = Dataset(datapath_var)
                     # The shape of each variable is (8,72,361,576)

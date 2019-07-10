@@ -30,5 +30,5 @@ if __name__=="__main__":
     #####################################################################################
     print ('*********************** call functions *************************')
     instance = meta.MERRA2.merra2(datapath_MERRA2, output_path, package_path)
-    #instance.massCorrect(2005,2005,example)
-    instance.amet(2005,2005,uvc_path)
+    instance.massCorrect(2005,2005,example)
+    #instance.amet(2005,2005,uvc_path)
