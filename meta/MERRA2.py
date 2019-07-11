@@ -614,6 +614,8 @@ class merra2:
         logging.info("Start the computation of geopotential on model level.")
         # call the function to generate contants
         constant = self.setConstants()
+        # define sigma level
+        A, B = self.defineSigmaLevels()
         # extract variables
         T = var_key.variables['T'][:]
         q = var_key.variables['QV'][:]
