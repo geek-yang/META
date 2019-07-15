@@ -227,8 +227,8 @@ class plots:
             if boundary == 'northhem':
                 fig = plt.figure()
                 ax = plt.axes(projection=ccrs.NorthPolarStereo())
-                ax.set_extent([-180,180,20,90],ccrs.PlateCarree())
-                #ax.set_extent([-180,180,60,90],ccrs.PlateCarree())
+                #ax.set_extent([-180,180,20,90],ccrs.PlateCarree())
+                ax.set_extent([-180,180,60,90],ccrs.PlateCarree())
                 ax.set_aspect('1')
                 ax.coastlines()
                 gl = ax.gridlines(linewidth=1, color='gray', alpha=0.5, linestyle='--')

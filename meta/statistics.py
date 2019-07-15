@@ -321,7 +321,7 @@ class operator:
                 IOError("The lead / lag coefficient should be integers.")
         else:
             IOError("The dimensons of input time series are not supported.")
-
+            
         return slope, r_value, p_value
 
     @staticmethod
