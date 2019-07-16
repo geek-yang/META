@@ -178,7 +178,7 @@ class merra2:
         Caveat! In order to make use of NCL, all the input fields should have ascending lat.
         """
         # set up logging files to monitor the calculation
-        logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget.log') ,
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget_{0}_{1}.log'.format(year_start,year_end)) ,
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # initialize the time span
@@ -414,9 +414,9 @@ class merra2:
             ###################################################################
             ######                  end of the month loop                ######
             ###################################################################
-            # export output as netCDF files
-            packing = meta.saveNetCDF.savenc()
-            packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path, name='MERRA2')
+        # export output as netCDF files
+        packing = meta.saveNetCDF.savenc()
+        packing.ncCorrect(uc_pool, vc_pool, year, lat, lon, self.out_path, name='MERRA2')
 
     def amet_memoryWise(self, year_start, year_end, path_uvc):
         """
@@ -433,7 +433,7 @@ class merra2:
         rtype: netCDF4
         """
          # set up logging files to monitor the calculation
-        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet_{0}_{1}.log'.format(year_start,year_end)),
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # initialize the time span

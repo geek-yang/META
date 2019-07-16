@@ -183,7 +183,7 @@ class jra55:
         Caveat! In order to make use of NCL, all the input fields should have ascending lat.
         """
         # set up logging files to monitor the calculation
-        logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget.log') ,
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_massBudget_{0}_{1}.log'.format(year_start,year_end)),
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # initialize the time span
@@ -501,7 +501,7 @@ class jra55:
         rtype: netCDF4
         """
          # set up logging files to monitor the calculation
-        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet_{0}_{1}.log'.format(year_start,year_end)) ,
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # initialize the time span
@@ -735,7 +735,7 @@ class jra55:
         rtype: netCDF4
         """
          # set up logging files to monitor the calculation
-        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet.log') ,
+        logging.basicConfig(filename = os.path.join(self.out_path,'history_amet_{0}_{1}.log'.format(year_start,year_end)),
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # initialize the time span
