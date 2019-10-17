@@ -46,7 +46,7 @@ class plots:
         #plt.xticks(np.linspace(20, 90, 11))
         plt.ylabel("Correlation Coefficient")
         plt.show()
-        fig.savefig(figname,dpi=300)
+        fig.savefig(figname,dpi=150)
         plt.close(fig)
 
     @staticmethod
@@ -80,7 +80,7 @@ class plots:
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=300)
+        fig.savefig(figname,dpi=150)
         plt.close(fig)
 
     @staticmethod
@@ -115,7 +115,7 @@ class plots:
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=300)
+        fig.savefig(figname,dpi=150)
         plt.close(fig)
 
     def vertProfileOverlap(xaxis, yaxis, corr, cont, p_value, label,
@@ -151,7 +151,7 @@ class plots:
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
-        fig.savefig(figname,dpi=300)
+        fig.savefig(figname,dpi=150)
         plt.close(fig)
 
     @staticmethod
@@ -178,7 +178,7 @@ class plots:
         contour_level = np.array([-0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8])
         cs = plt.contour(xaxis, yaxis, corr.transpose(),
                          contour_level, colors='k')
-        plt.clabel(cs, inline=1, fontsize=10)
+        plt.clabel(cs, inline=1, fontsize=10, fmt='%0.1f')
         if ttest == True:
             ii, jj = np.where(p_value.transpose()<=0.05) # 95% significance
             plt.scatter(xaxis[jj], yaxis[ii], s=0.8, c='gray', alpha=0.6)
@@ -186,8 +186,11 @@ class plots:
         plt.xlabel("Time Lag (year)")
         #lead_year = ['-15','-12','-9','-6','-3','0','3','6','9','12','15']
         plt.ylabel("Latitude")
+        ax = plt.gca()
+        ax.set_xlim(-10,10)
+        ax.set_ylim(40,70)
         plt.show()
-        fig.savefig(figname,dpi=300)
+        fig.savefig(figname,dpi=150)
         plt.close(fig)
 
     @staticmethod
@@ -227,8 +230,7 @@ class plots:
             if boundary == 'northhem':
                 fig = plt.figure()
                 ax = plt.axes(projection=ccrs.NorthPolarStereo())
-                #ax.set_extent([-180,180,20,90],ccrs.PlateCarree())
-                ax.set_extent([-180,180,60,90],ccrs.PlateCarree())
+                ax.set_extent([-180,180,20,90],ccrs.PlateCarree())
                 ax.set_aspect('1')
                 ax.coastlines()
                 gl = ax.gridlines(linewidth=1, color='gray', alpha=0.5, linestyle='--')
@@ -243,12 +245,49 @@ class plots:
                 cbar.set_label(label,size = 8)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 6)
-                if ttest == True:
+                if ttest == 'dot':
                     ii, jj = np.where(p_value<=0.05) # significance level 95%
                     ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
                                s=0.1, c='g',alpha=0.3)
+                elif ttest == 'line':
+                    p_region = np.zeros(p_value.shape,dtype=int)
+                    p_region[p_value<=0.05] = -1
+                    cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
+                                            units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
+                    cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
                 iplt.show()
-                fig.savefig(figname, dpi=300)
+                fig.savefig(figname, dpi=150)
+                plt.close(fig)
+            if boundary == 'polarcap':
+                fig = plt.figure()
+                ax = plt.axes(projection=ccrs.NorthPolarStereo())
+                ax.set_extent([-180,180,60,90],ccrs.PlateCarree())
+                ax.set_aspect('1')
+                ax.coastlines()
+                gl = ax.gridlines(linewidth=1, color='gray', alpha=0.5, linestyle='--')
+                theta = np.linspace(0, 2*np.pi, 100)
+                center, radius = [0.5, 0.5], 0.5
+                verts = np.vstack([np.sin(theta), np.cos(theta)]).T
+                circle = mpath.Path(verts * radius + center)
+                ax.set_boundary(circle, transform=ax.transAxes)
+                cs = iplt.contourf(cube_iris, cmap='coolwarm',levels=ticks, extend='both') #, vmin=ticks[0], vmax=ticks[-1]
+                cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
+                                    shrink =0.8, pad=0.05)#, format="%.1f")
+                cbar.set_label(label,size = 10)
+                cbar.set_ticks(ticks)
+                cbar.ax.tick_params(labelsize = 8)
+                if ttest == 'dot':
+                    ii, jj = np.where(p_value<=0.05) # significance level 95%
+                    ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
+                               s=0.1, c='g',alpha=0.3)
+                elif ttest == 'line':
+                    p_region = np.zeros(p_value.shape,dtype=int)
+                    p_region[p_value<=0.05] = -1
+                    cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
+                                            units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
+                    cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
+                iplt.show()
+                fig.savefig(figname, dpi=150)
                 plt.close(fig)
             elif boundary == 'atlantic':
                 fig = plt.figure(figsize=(8,5.4))
@@ -269,12 +308,18 @@ class plots:
                 cbar.set_label(label,size = 11)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 11)
-                if ttest == True:
+                if ttest == 'dot':
                     ii, jj = np.where(p_value<=0.05) # significance level 95%
                     ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
                                s=0.1, c='g',alpha=0.3)
+                elif ttest == 'line':
+                    p_region = np.zeros(p_value.shape,dtype=int)
+                    p_region[p_value<=0.05] = -1
+                    cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
+                                            units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
+                    cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
                 iplt.show()
-                fig.savefig(figname, dpi=300)
+                fig.savefig(figname, dpi=150)
                 plt.close(fig)
             else:
                 print ('This boundary is not supported by the module. Please check the documentation.')
@@ -323,7 +368,7 @@ class plots:
                 #ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
                 #           s=0.1, c='g',alpha=0.3)
                 iplt.show()
-                fig.savefig(figname, dpi=300)
+                fig.savefig(figname, dpi=150)
                 plt.close(fig)
             elif boundary == 'atlantic':
                 fig = plt.figure(figsize=(8,5.4))
@@ -348,7 +393,7 @@ class plots:
                 #ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
                 #           s=0.1, c='g',alpha=0.3)
                 iplt.show()
-                fig.savefig(figname, dpi=300)
+                fig.savefig(figname, dpi=150)
                 plt.close(fig)
             else:
                 print ('This boundary is not supported by the module. Please check the documentation.')
