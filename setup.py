@@ -8,8 +8,8 @@ with open('README.rst') as readme_file:
 
 setup(
     name='meta',
-    version='0.1.0',
-    description="Meridional Energy Transport Analyzer, in short as META, is a python library for the calculation of meridional energy transport and further analysis based on climate data. It is able to deal with the calculations of MET in both the atmosphere (AMET) and ocean (OMET). In addition, it provides diagnostic modules to perform statistical operation on MET.",
+    version='0.1.2',
+    description="Meridional Energy Transport Analyzer, in short as META, is a python library designed for the calculation of meridional energy transport (MET) and extended analysis with climatological data sets. It is able to deal with the calculations of MET in both the atmosphere (AMET) and ocean (OMET). In addition, it provides diagnostic modules to perform statistical operations on MET.",
     long_description=readme + '\n\n',
     author="Yang Liu",
     author_email='y.liu@esciencecenter.nl',
@@ -20,6 +20,9 @@ setup(
     package_dir={'meta':
                  'meta'},
     include_package_data=True,
+    install_requires=[
+        'ncl>=6.4.0'
+    ]
     license="Apache Software License 2.0",
     zip_safe=False,
     keywords='meta',
