@@ -51,7 +51,8 @@ class plots:
 
     @staticmethod
     def vertProfile(xaxis, yaxis, corr, p_value, label,
-                    ticks, figname='./VerticalProfile', ttest=False):
+                    ticks, figname='./VerticalProfile',
+                    decimal="%.1f", ttest=False):
         """
         This module helps to create a plot to show the vertical profile of fields
         after regression.
@@ -68,13 +69,13 @@ class plots:
         fig = plt.figure(figsize=(6.5,5.4))
         cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
         cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                            shrink =0.8, pad=0.135, format="%.1f")
+                            shrink =0.8, pad=0.135, format=decimal)
         cbar.set_label(label,size = 10)
         cbar.set_ticks(ticks)
         cbar.ax.tick_params(labelsize = 10)
         if ttest == True:
             ii, jj = np.where(p_value<=0.05) # 95% significance
-            plt.plot(xaxis[jj], yaxis[ii], 'go', alpha=0.3)
+            plt.plot(xaxis[jj], yaxis[ii], 'k.', alpha=0.4)
         plt.xlabel("Latitude")
         plt.ylabel("Level (hPa)")
         #invert the y axis
@@ -120,7 +121,8 @@ class plots:
 
     def vertProfileOverlap(xaxis, yaxis, corr, cont, p_value, label,
                            ticks, contour_level, inline_space,
-                           figname='./VerticalProfile', ttest=False):
+                           figname='./VerticalProfile', decimal='%1.1f',
+                           ttest=False):
         """
         This module helps to create a plot to show the vertical profile of fields
         after regression. It also includes the full contour of stokes stream function.
@@ -136,18 +138,18 @@ class plots:
         fig = plt.figure(figsize=(6.5,5.4))
         cs = plt.contourf(xaxis, yaxis, corr, levels=ticks, cmap='coolwarm', extend='both')
         cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                            shrink =0.8, pad=0.135, format="%.1f")
+                            shrink =0.8, pad=0.135, format=decimal)
         cbar.set_label(label,size = 10)
         cbar.set_ticks(ticks)
         cbar.ax.tick_params(labelsize = 10)
         if ttest == True:
             ii, jj = np.where(p_value<=0.05) # 95% significance
-            plt.plot(xaxis[jj], yaxis[ii], 'go', alpha=0.3)
+            plt.plot(xaxis[jj], yaxis[ii], 'k.', alpha=0.4)
         plt.xlabel("Latitude")
         plt.ylabel("Level (hPa)")
         contour = plt.contour(xaxis, yaxis, cont,
                               contour_level, colors='k', linewidths = 0.9, alpha=0.6)
-        plt.clabel(contour, inline=inline_space, fontsize=8, fmt = '%1.1f')
+        plt.clabel(contour, inline=inline_space, fontsize=10, fmt = '%1.1f')
         #invert the y axis
         plt.gca().invert_yaxis()
         plt.show()
@@ -196,7 +198,7 @@ class plots:
     @staticmethod
     def geograph(latitude, longitude, field, p_value, label, ticks,
                  figname='./NorthPolar.png', gridtype='geographical',
-                 boundary='northhem', ttest=False):
+                 boundary='northhem', decimal="%.1f", ttest=False):
         """
         This module will make a geographical plot to give a spatial view of fields.
         This module is built on iris and cartopy for the visualization of fields on
@@ -241,20 +243,20 @@ class plots:
                 ax.set_boundary(circle, transform=ax.transAxes)
                 cs = iplt.contourf(cube_iris, cmap='coolwarm',levels=ticks, extend='both') #, vmin=ticks[0], vmax=ticks[-1]
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                    shrink =0.8, pad=0.05, format="%.1f")
+                                    shrink =0.8, pad=0.05, format=decimal)
                 cbar.set_label(label,size = 8)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 6)
                 if ttest == 'dot':
-                    ii, jj = np.where(p_value<=0.05) # significance level 95%
+                    ii, jj = np.where(p_value<=0.01) # significance level 95%
                     ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
-                               s=0.1, c='g',alpha=0.3)
+                               s=0.1, c='grey',alpha=0.3)
                 elif ttest == 'line':
                     p_region = np.zeros(p_value.shape,dtype=int)
-                    p_region[p_value<=0.05] = -1
+                    p_region[p_value<=0.01] = -1
                     cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
                                             units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
-                    cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
+                    cs = iplt.contour(cube_p, colors='grey', linewidths=0.5)
                 iplt.show()
                 fig.savefig(figname, dpi=150)
                 plt.close(fig)
@@ -272,20 +274,20 @@ class plots:
                 ax.set_boundary(circle, transform=ax.transAxes)
                 cs = iplt.contourf(cube_iris, cmap='coolwarm',levels=ticks, extend='both') #, vmin=ticks[0], vmax=ticks[-1]
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                    shrink =0.8, pad=0.05)#, format="%.1f")
+                                    shrink =0.8, pad=0.05, format=decimal)
                 cbar.set_label(label,size = 10)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 8)
                 if ttest == 'dot':
                     ii, jj = np.where(p_value<=0.05) # significance level 95%
                     ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
-                               s=0.1, c='g',alpha=0.3)
+                               s=0.15, c='grey',alpha=0.4)
                 elif ttest == 'line':
                     p_region = np.zeros(p_value.shape,dtype=int)
                     p_region[p_value<=0.05] = -1
                     cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
                                             units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
-                    cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
+                    cs = iplt.contour(cube_p, colors='green', linewidths=0.5)
                 iplt.show()
                 fig.savefig(figname, dpi=150)
                 plt.close(fig)
@@ -304,17 +306,17 @@ class plots:
                 gl.ylabel_style = {'size': 11, 'color': 'gray'}
                 cs = iplt.contourf(cube_iris,cmap='coolwarm',levels=ticks, extend='both')
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                    shrink =0.8, pad=0.05, format="%.1f")
+                                    shrink =0.8, pad=0.05, format=decimal)
                 cbar.set_label(label,size = 11)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 11)
                 if ttest == 'dot':
-                    ii, jj = np.where(p_value<=0.05) # significance level 95%
+                    ii, jj = np.where(p_value<=0.01) # significance level 95%
                     ax.scatter(longitude[jj], latitude[ii], transform=ccrs.Geodetic(),
                                s=0.1, c='g',alpha=0.3)
                 elif ttest == 'line':
                     p_region = np.zeros(p_value.shape,dtype=int)
-                    p_region[p_value<=0.05] = -1
+                    p_region[p_value<=0.01] = -1
                     cube_p = iris.cube.Cube(p_region, long_name='geographical field', var_name='p',
                                             units='1', dim_coords_and_dims=[(lat_iris, 0), (lon_iris, 1)])
                     cs = iplt.contour(cube_p,colors='g',linestyle='-', linewidths=0.5)
@@ -360,7 +362,7 @@ class plots:
                 ax.set_boundary(circle, transform=ax.transAxes)
                 cs = iplt.contourf(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1]) #pcolormesh
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                    shrink =0.8, pad=0.05, format="%.1f")
+                                    shrink =0.8, pad=0.05, format=decimal)
                 cbar.set_label(label,size = 8)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 6)
@@ -385,7 +387,7 @@ class plots:
                 gl.ylabel_style = {'size': 11, 'color': 'gray'}
                 cs = iplt.contourf(cube_regrid, cmap='coolwarm', vmin=ticks[0], vmax=ticks[-1])
                 cbar = fig.colorbar(cs,extend='both', orientation='horizontal',
-                                    shrink =0.8, pad=0.05, format="%.1f")
+                                    shrink =0.8, pad=0.05, format=decimal)
                 cbar.set_label(label,size = 8)
                 cbar.set_ticks(ticks)
                 cbar.ax.tick_params(labelsize = 6)
