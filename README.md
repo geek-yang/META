@@ -54,3 +54,17 @@ All the modules have been tested with six reanalysis data sets. Operations withi
 In order to use the existing workflow, the input files should be organzied in a certain structure with certain file names (the file names can be customized in each script named after reanalysis product, e.g. "MERRA.py"). Since different data sets have their own naming convention and saved structure, the file structure and file names are listed in the beginning of each script. Please check the code of your target reanalysis product.<br>
 
 For more information about how to use/customize each module, please check the comments in the code at the beginning of each function. <br>
+
+## Cite our work :heart:
+If you use this package, please cite it via:
+@Article{esd-11-77-2020,
+AUTHOR = {Liu, Y. and Attema, J. and Moat, B. and Hazeleger, W.},
+TITLE = {Synthesis and evaluation of historical meridional heat transport from midlatitudes towards the Arctic},
+JOURNAL = {Earth System Dynamics},
+VOLUME = {11},
+YEAR = {2020},
+NUMBER = {1},
+PAGES = {77--96},
+URL = {https://www.earth-syst-dynam.net/11/77/2020/},
+DOI = {10.5194/esd-11-77-2020}
+}
