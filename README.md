@@ -56,8 +56,8 @@ In order to use the existing workflow, the input files should be organzied in a 
 For more information about how to use/customize each module, please check the comments in the code at the beginning of each function. <br>
 
 ## Cite our work :heart:
+If you use this package, please cite it via: <br>
 ```latex
-If you use this package, please cite it via:
 @Article{esd-11-77-2020,
 AUTHOR = {Liu, Y. and Attema, J. and Moat, B. and Hazeleger, W.},
 TITLE = {Synthesis and evaluation of historical meridional heat transport from midlatitudes towards the Arctic},
