@@ -56,15 +56,17 @@ In order to use the existing workflow, the input files should be organzied in a 
 For more information about how to use/customize each module, please check the comments in the code at the beginning of each function. <br>
 
 ## Cite our work :heart:
-If you use this package, please cite it via: <br>
-@Article{esd-11-77-2020, <br>
-AUTHOR = {Liu, Y. and Attema, J. and Moat, B. and Hazeleger, W.}, <br>
-TITLE = {Synthesis and evaluation of historical meridional heat transport from midlatitudes towards the Arctic}, <br>
-JOURNAL = {Earth System Dynamics}, <br>
-VOLUME = {11}, <br>
-YEAR = {2020}, <br>
-NUMBER = {1}, <br>
-PAGES = {77--96}, <br>
-URL = {https://www.earth-syst-dynam.net/11/77/2020/}, <br>
-DOI = {10.5194/esd-11-77-2020} <br>
-} <br>
+```latex
+If you use this package, please cite it via:
+@Article{esd-11-77-2020,
+AUTHOR = {Liu, Y. and Attema, J. and Moat, B. and Hazeleger, W.},
+TITLE = {Synthesis and evaluation of historical meridional heat transport from midlatitudes towards the Arctic},
+JOURNAL = {Earth System Dynamics},
+VOLUME = {11},
+YEAR = {2020},
+NUMBER = {1},
+PAGES = {77--96},
+URL = {https://www.earth-syst-dynam.net/11/77/2020/},
+DOI = {10.5194/esd-11-77-2020}
+}
+```
