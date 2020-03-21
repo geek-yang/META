@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3609505.svg)](https://doi.org/10.5281/zenodo.3609505)
 # META :globe_with_meridians:
 **Meridional Energy Transport Analyzer**, in short as **META**, is a python library designed for the calculation of meridional energy transport (MET) and extended analysis with climatological data. It is able to deal with the calculations of MET in both the atmosphere (AMET) and ocean (OMET). In addition, it provides diagnostic modules to perform statistical operations on MET.<br/>
 
